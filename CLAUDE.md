@@ -40,7 +40,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Frontend Bundling
 
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+- This project intentionally avoids a frontend build pipeline (no Vite/npm). If UI changes don’t show up, restart `php artisan serve` and consider clearing caches (e.g., `php artisan view:clear`).
 
 ## Documentation Files
 
