@@ -6,10 +6,6 @@ Rather than being another card search tool or collection tracker, YaFaBa is buil
 
 This repository is the backend API. It's public — not just to back the companion iOS client, but so third-party clients (an Android port, for instance) have something real to build against.
 
-## Why open source?
-
-Direct monetization isn't really viable under Legend Story Studios' fan-content IP terms anyway, so there's no downside to opening this up — and it means someone else could build on it (an Android client, a different frontend) without that being a burden on one person to maintain. Server costs are expected to be a rounding error against what the game already costs to play; any Patreon/ad/affiliate revenue is a bonus that offsets hosting, not something the project depends on.
-
 ## Project docs
 
 The `docs/` directory has the full picture — read these before diving into implementation:
@@ -25,7 +21,7 @@ This project is young and still taking shape — expect things to move. If you'r
 
 ## Credits & Data Sources
 
-YaFaBa depends heavily on community and volunteer-maintained work, and that should stay visible here, not just buried in docs:
+YaFaBa depends heavily on community and volunteer-maintained work:
 
 - **[the-fab-cube/flesh-and-blood-cards](https://github.com/the-fab-cube/flesh-and-blood-cards)** (Tyler Luce and contributors) — primary structured card data source (the same source [fabrary.net](https://fabrary.net/) runs on)
 - **[tcgcsv.com](https://tcgcsv.com/)** — card pricing and product data
