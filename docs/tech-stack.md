@@ -63,6 +63,6 @@
 - **Optional on-device enhancement**: Apple's Foundation Models framework (iPhone 15 Pro+, free, on-device, no token cost) used only for phrasing/summarizing server-retrieved Knowledge Base content in Play Assist — not for reasoning, retrieval, or Enrichment itself. Gracefully degrades on unsupported devices via Apple's built-in availability check.
 
 ## Open Source & Licensing
-- **YaFaBa's own code and API**: open source (license TBD, but must be GPL-compatible given the Talishar fork dependency)
+- **YaFaBa's own code and API**: open source under **GPL-3.0** (see `LICENSE`)
 - **Talishar fork**: GPL-3.0 obligations apply to that portion of the codebase
 - Direct monetization isn't viable under LSS's fan-content IP terms regardless (no paid guides/content), so open sourcing has no real monetization downside
