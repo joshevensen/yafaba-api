@@ -111,7 +111,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Vite Error
 
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+- This project does not use Vite. If you see an "Unable to locate file in Vite manifest" error, it likely means a stale `@vite(...)` directive exists in a Blade view or cached views need to be cleared (`php artisan view:clear`).
 
 === pint/core rules ===
 
