@@ -1,58 +1,45 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# YaFaBa API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**YaFaBa** ("Yet Another Flesh and Blood App") is the open-source Laravel API powering a mobile app for [Flesh and Blood](https://fabtcg.com/) built around one idea: help a player understand their cards and their class well enough to become a pro and stay one.
 
-## About Laravel
+Rather than being another card search tool or collection tracker, YaFaBa is built on a single structured, LLM-enriched card dataset — generated once during a scheduled Enrichment pipeline and reused everywhere: choosing a class, browsing cards, building a deck, and playing a match. Everything a user touches at runtime is deterministic (DB lookups, cached data, rule-based suggestions); the AI work happens once, on a schedule, not per request.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This repository is the backend API. It's public — not just to back the companion iOS client, but so third-party clients (an Android port, for instance) have something real to build against.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Why open source?
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Direct monetization isn't really viable under Legend Story Studios' fan-content IP terms anyway, so there's no downside to opening this up — and it means someone else could build on it (an Android client, a different frontend) without that being a burden on one person to maintain. Server costs are expected to be a rounding error against what the game already costs to play; any Patreon/ad/affiliate revenue is a bonus that offsets hosting, not something the project depends on.
 
-## Learning Laravel
+## Project docs
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+The `docs/` directory has the full picture — read these before diving into implementation:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+- [`docs/app-design.md`](docs/app-design.md) — product philosophy, features, and how the four areas (Learn, Explore, Build, Play) fit together
+- [`docs/tech-stack.md`](docs/tech-stack.md) — infrastructure, hosting, and technology choices
+- [`docs/data-schema.md`](docs/data-schema.md) — database schema (Postgres + pgvector)
+- [`docs/screens.md`](docs/screens.md) — client screen inventory
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+This project is young and still taking shape — expect things to move. If you're interested in contributing, start by reading `docs/app-design.md` to understand the philosophy and scope, then open an issue to discuss before sending a large PR. Small, focused PRs are easiest to review.
 
-## Code of Conduct
+## Credits & Data Sources
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+YaFaBa depends heavily on community and volunteer-maintained work, and that should stay visible here, not just buried in docs:
 
-## Security Vulnerabilities
+- **[the-fab-cube/flesh-and-blood-cards](https://github.com/the-fab-cube/flesh-and-blood-cards)** (Tyler Luce and contributors) — primary structured card data source (the same source [fabrary.net](https://fabrary.net/) runs on)
+- **[tcgcsv.com](https://tcgcsv.com/)** — card pricing and product data
+- **cardvault.fabtcg.com** (Legend Story Studios) — official print/product catalog data
+- **[rules.fabtcg.com](https://rules.fabtcg.com/)** — comprehensive rules text, used as ground truth for card explainers
+- **[Talishar](https://github.com/Talishar/Talishar)** (GPL-3.0, volunteer-maintained) — the forked game engine powering match play
+- **Legend Story Studios** — Flesh and Blood, rules text, errata bulletins, and official card assets
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Legend Story Studios' errata bulletins are cached, not scraped live, per the Enrichment pipeline described in the docs.
+
+## Legal
+
+YaFaBa is a fan project and is in no way affiliated with Legend Story Studios. Flesh and Blood™ and set names are trademarks of Legend Story Studios®. Card images and text are © Legend Story Studios.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This repository is licensed under [GPL-3.0](LICENSE), consistent with the Talishar-derived game engine's own GPL-3.0 license.
