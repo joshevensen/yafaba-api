@@ -139,3 +139,17 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - To filter on a particular test name: `php artisan test --compact --filter=testName` (recommended after making a change to a related file).
 
 </laravel-boost-guidelines>
+
+## Verification
+
+```bash
+vendor/bin/pint --format agent
+php artisan test --compact
+```
+
+## Pre-commit Gate
+
+```bash
+vendor/bin/pint --dirty --format agent
+php artisan test --compact
+```
