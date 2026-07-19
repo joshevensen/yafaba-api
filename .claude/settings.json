@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "hexbyte": {
+      "source": {
+        "source": "github",
+        "repo": "joshevensen/hexbyte-plugins"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "orc@hexbyte": true
+  }
+}
