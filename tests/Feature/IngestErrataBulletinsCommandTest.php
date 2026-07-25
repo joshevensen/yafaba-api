@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Mockery;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\NullOutput;
 use Tests\TestCase;
@@ -179,7 +180,26 @@ class IngestErrataBulletinsCommandTest extends TestCase
 
         $this->assertFalse(ErrataBulletin::where('bulletin_number', '10')->exists());
 
-        Log::shouldHaveReceived('warning')->atLeast()->once();
+        Log::shouldHaveReceived('warning')
+            ->with('Failed to fetch errata bulletin article', Mockery::any())
+            ->atLeast()->once();
+    }
+
+    public function test_index_url_option_overrides_the_default_index_url(): void
+    {
+        Http::fake([
+            self::ARTICLE_URL => Http::response($this->articleFixture()),
+            'https://example.test/custom-errata/' => Http::response($this->indexFixture()),
+            'https://legacy.fabtcg.com/*' => Http::response($this->legacyFixture()),
+        ]);
+
+        $this->artisan('data:ingest-errata', ['--index-url' => 'https://example.test/custom-errata/'])
+            ->assertExitCode(0);
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://example.test/custom-errata/');
+        Http::assertNotSent(fn ($request) => $request->url() === self::INDEX_URL);
+
+        $this->assertTrue(ErrataBulletin::where('bulletin_number', '10')->exists());
     }
 
     public function test_idempotent_rerun_does_not_refetch_cached_bulletin_articles(): void

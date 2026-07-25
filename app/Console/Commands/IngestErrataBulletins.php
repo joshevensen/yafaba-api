@@ -176,9 +176,10 @@ class IngestErrataBulletins extends Command
         try {
             $html = $this->fetchHtml($entry['url']);
         } catch (Throwable $e) {
-            Log::warning('Failed to parse errata bulletin article', [
+            Log::warning('Failed to fetch errata bulletin article', [
                 'bulletin_number' => $entry['bulletin_number'],
                 'url' => $entry['url'],
+                'message' => $e->getMessage(),
             ]);
             $this->warn("Failed to fetch errata bulletin article {$entry['bulletin_number']}: {$e->getMessage()}");
             $this->flagged++;
