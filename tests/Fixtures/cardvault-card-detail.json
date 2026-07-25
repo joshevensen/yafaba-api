@@ -1,0 +1,63 @@
+{
+    "count": 1,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "id": "ddab0573-a6a5-4f44-a3a6-b4f7e0145cc4",
+            "card_id": "chorus-of-ironsong-2",
+            "cores": [],
+            "card_prints": [
+                {
+                    "id": "a92b69b1-3604-4676-8334-3e7e1445569d",
+                    "print_id": "DTD208",
+                    "set_number": 208,
+                    "rarity": "majestic",
+                    "print_set": {
+                        "set_code": "DTD",
+                        "set_name": "Dusk till Dawn",
+                        "set_type": "expansion"
+                    },
+                    "faces": [
+                        {
+                            "finish_type": "regular",
+                            "art_type": "regular",
+                            "printed_code": "DTD208",
+                            "image": {
+                                "small": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/small/DTD208.webp",
+                                "normal": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/normal/DTD208.webp",
+                                "large": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/large/DTD208.webp"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "b1dc6848-7024-459a-8191-99c795b16174",
+                    "print_id": "DTD208-RF",
+                    "set_number": 208,
+                    "rarity": "majestic",
+                    "print_set": {
+                        "set_code": "DTD",
+                        "set_name": "Dusk till Dawn",
+                        "set_type": "expansion"
+                    },
+                    "faces": [
+                        {
+                            "finish_type": "rainbow-foil",
+                            "art_type": "alternate",
+                            "printed_code": "DTD208",
+                            "image": {
+                                "small": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/small/DTD208-RF.webp",
+                                "normal": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/normal/DTD208-RF.webp",
+                                "large": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/large/DTD208-RF.webp"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "rulings_errata": [],
+            "card_legality": {},
+            "object_type": "deck-card"
+        }
+    ]
+}

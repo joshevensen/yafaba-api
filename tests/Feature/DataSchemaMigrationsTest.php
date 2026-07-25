@@ -23,7 +23,7 @@ class DataSchemaMigrationsTest extends TestCase
             'heroes' => ['id', 'name', 'lore', 'flavor', 'notes'],
             'hero_profiles' => ['id', 'hero_id', 'label', 'pattern_summary', 'complexity_score', 'complexity_rating', 'playstyle_tags', 'pitch_lean', 'notes'],
             'cards' => ['id', 'name', 'card_type_id', 'pitch_value', 'cost', 'power', 'defense', 'functional_text', 'hero_profile_id', 'age', 'hero_profile_match_confidence', 'hero_profile_grouping_status', 'source_hash', 'source_id', 'updated_at'],
-            'card_printings' => ['id', 'card_id', 'set_code', 'rarity', 'finish', 'art_variant', 'image_url', 'cardvault_print_id', 'price_cache', 'price_updated_at'],
+            'card_printings' => ['id', 'card_id', 'set_code', 'rarity', 'finish', 'art_variant', 'image_url', 'cardvault_print_id', 'image_source_hash', 'price_cache', 'price_updated_at'],
             'card_legality' => ['id', 'card_id', 'format', 'status', 'effective_date', 'notes'],
             'card_classes' => ['card_id', 'class_id'],
             'card_talents' => ['card_id', 'talent_id'],

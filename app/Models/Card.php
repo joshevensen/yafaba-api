@@ -52,4 +52,9 @@ class Card extends Model
     {
         return $this->hasMany(CardLegality::class);
     }
+
+    public function printings(): HasMany
+    {
+        return $this->hasMany(CardPrinting::class);
+    }
 }
