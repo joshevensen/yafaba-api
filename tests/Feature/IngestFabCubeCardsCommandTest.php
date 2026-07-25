@@ -61,6 +61,59 @@ class IngestFabCubeCardsCommandTest extends TestCase
         return $state;
     }
 
+    /**
+     * A minimal, well-formed upstream record with sensible defaults, for tests
+     * that only care about one or two fields.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function baseRecord(array $overrides = []): array
+    {
+        return array_merge([
+            'unique_id' => 'base-'.($overrides['name'] ?? 'record'),
+            'name' => 'Base Record',
+            'color' => '',
+            'pitch' => '',
+            'cost' => '',
+            'power' => '',
+            'defense' => '',
+            'health' => '',
+            'intelligence' => '',
+            'arcane' => '',
+            'types' => ['Generic', 'Action'],
+            'traits' => [],
+            'card_keywords' => [],
+            'abilities_and_effects' => [],
+            'ability_and_effect_keywords' => [],
+            'granted_keywords' => [],
+            'removed_keywords' => [],
+            'interacts_with_keywords' => [],
+            'functional_text' => '',
+            'functional_text_plain' => '',
+            'type_text' => '',
+            'played_horizontally' => false,
+            'blitz_legal' => false,
+            'cc_legal' => false,
+            'commoner_legal' => false,
+            'll_legal' => false,
+            'silver_age_legal' => false,
+            'blitz_living_legend' => false,
+            'cc_living_legend' => false,
+            'blitz_banned' => false,
+            'cc_banned' => false,
+            'commoner_banned' => false,
+            'll_banned' => false,
+            'silver_age_banned' => false,
+            'upf_banned' => false,
+            'blitz_suspended' => false,
+            'cc_suspended' => false,
+            'commoner_suspended' => false,
+            'll_restricted' => false,
+            'printings' => [],
+        ], $overrides);
+    }
+
     public function test_ingest_creates_expected_row_counts_and_card_attributes(): void
     {
         $this->fakeUpstream($this->fixtureRecords());
@@ -131,6 +184,49 @@ class IngestFabCubeCardsCommandTest extends TestCase
         $this->assertTrue(Card::where('source_id', 'fixture-005')->exists());
     }
 
+    public function test_record_missing_unique_id_is_skipped_and_flagged(): void
+    {
+        Log::spy();
+
+        $records = [
+            $this->baseRecord(['unique_id' => null, 'name' => 'No Id Card']),
+            $this->baseRecord(['unique_id' => '', 'name' => 'Empty Id Card']),
+            $this->baseRecord(['unique_id' => 'has-id', 'name' => 'Has Id Card']),
+        ];
+        $this->fakeUpstream($records);
+
+        $this->artisan('data:ingest-cards')->assertExitCode(0);
+
+        Log::shouldHaveReceived('warning')->with('Skipping card with missing unique_id', Mockery::any())->twice();
+
+        $this->assertDatabaseCount('cards', 1);
+        $this->assertFalse(Card::where('name', 'No Id Card')->exists());
+        $this->assertFalse(Card::where('name', 'Empty Id Card')->exists());
+        $this->assertTrue(Card::where('source_id', 'has-id')->exists());
+    }
+
+    public function test_card_type_classification_covers_every_branch(): void
+    {
+        $records = [
+            $this->baseRecord(['unique_id' => 'branch-equipment', 'types' => ['Mechanologist', 'Equipment', 'Head']]),
+            $this->baseRecord(['unique_id' => 'branch-attack-reaction', 'types' => ['Warrior', 'Attack Reaction']]),
+            $this->baseRecord(['unique_id' => 'branch-defense-reaction', 'types' => ['Wizard', 'Defense Reaction']]),
+            $this->baseRecord(['unique_id' => 'branch-resource', 'types' => ['Generic', 'Resource', 'Gem']]),
+            $this->baseRecord(['unique_id' => 'branch-token', 'types' => ['Generic', 'Token', 'Aura']]),
+            $this->baseRecord(['unique_id' => 'branch-demi-hero', 'name' => 'Demi Hero Card', 'types' => ['Assassin', 'Demi-Hero']]),
+        ];
+        $this->fakeUpstream($records);
+
+        $this->artisan('data:ingest-cards')->assertExitCode(0);
+
+        $this->assertSame('equipment', Card::where('source_id', 'branch-equipment')->firstOrFail()->cardType->name);
+        $this->assertSame('attack_reaction', Card::where('source_id', 'branch-attack-reaction')->firstOrFail()->cardType->name);
+        $this->assertSame('defense_reaction', Card::where('source_id', 'branch-defense-reaction')->firstOrFail()->cardType->name);
+        $this->assertSame('resource_token', Card::where('source_id', 'branch-resource')->firstOrFail()->cardType->name);
+        $this->assertSame('resource_token', Card::where('source_id', 'branch-token')->firstOrFail()->cardType->name);
+        $this->assertSame('hero', Card::where('source_id', 'branch-demi-hero')->firstOrFail()->cardType->name);
+    }
+
     public function test_ignorable_subtype_tokens_do_not_become_classes_or_talents(): void
     {
         $this->fakeUpstream($this->fixtureRecords());
@@ -189,6 +285,26 @@ class IngestFabCubeCardsCommandTest extends TestCase
             0,
             CardLegality::whereNotIn('format', ['SAGE', 'CC', 'Blitz', 'Commoner'])->count(),
         );
+    }
+
+    public function test_legality_row_is_deleted_when_a_format_regresses_to_no_flags(): void
+    {
+        $legalRecord = $this->baseRecord(['unique_id' => 'legality-regression', 'blitz_legal' => true]);
+        $state = $this->fakeUpstreamMutable([$legalRecord]);
+
+        $this->artisan('data:ingest-cards')->assertExitCode(0);
+
+        $card = Card::where('source_id', 'legality-regression')->firstOrFail();
+        $this->assertTrue($card->legalities()->where('format', 'Blitz')->where('status', 'legal')->exists());
+
+        $revokedRecord = $legalRecord;
+        $revokedRecord['blitz_legal'] = false;
+        $state->payload = [$revokedRecord];
+
+        $this->artisan('data:ingest-cards')->assertExitCode(0);
+
+        $this->assertFalse($card->legalities()->where('format', 'Blitz')->exists());
+        $this->assertSame(0, $card->legalities()->count());
     }
 
     public function test_hero_seeding_is_strictly_one_to_one_to_one(): void

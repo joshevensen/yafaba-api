@@ -151,11 +151,10 @@ class IngestFabCubeCards extends Command
     }
 
     /**
-     * Fetch the upstream card records.
-     *
-     * @return array<int, array<string, mixed>>
+     * Fetch the upstream card records. Returns whatever the response decodes
+     * to — validated as a non-empty array of records by the caller.
      */
-    private function fetchRecords(): array
+    private function fetchRecords(): mixed
     {
         $url = $this->option('url') ?: self::SOURCE_URL;
 
