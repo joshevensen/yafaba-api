@@ -34,7 +34,7 @@ class IngestRulesText extends Command
             return Command::FAILURE;
         }
 
-        $previous = RulesTextVersion::query()->orderByDesc('fetched_at')->first();
+        $previous = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
         $currentSections = $this->parseSections($body);
 
         if ($previous === null) {

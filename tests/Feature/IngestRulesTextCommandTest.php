@@ -99,10 +99,37 @@ class IngestRulesTextCommandTest extends TestCase
         $first->refresh();
         $this->assertSame($body, $first->full_text);
 
-        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->first();
+        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
         $this->assertNotSame($first->id, $newest->id);
 
         $diff = json_decode($newest->diff_from_previous, true);
+        $this->assertSame(['added' => [], 'removed' => [], 'changed' => []], $diff);
+    }
+
+    public function test_tied_fetched_at_breaks_toward_the_most_recently_inserted_row(): void
+    {
+        $tiedAt = now();
+
+        $older = RulesTextVersion::factory()->create([
+            'fetched_at' => $tiedAt,
+            'full_text' => "1.0.1 Only in the older row\n",
+        ]);
+        $newer = RulesTextVersion::factory()->create([
+            'fetched_at' => $tiedAt,
+            'full_text' => "1.0.2 Only in the newer row\n",
+        ]);
+
+        $this->assertSame($older->fetched_at->toDateTimeString(), $newer->fetched_at->toDateTimeString());
+
+        $this->fakeUpstream($newer->full_text);
+
+        $this->artisan('data:ingest-rules-text')->assertExitCode(0);
+
+        $latest = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
+        $diff = json_decode($latest->diff_from_previous, true);
+
+        // If the tie-break preferred the older row, this would instead show
+        // `1.0.1` removed and `1.0.2` added.
         $this->assertSame(['added' => [], 'removed' => [], 'changed' => []], $diff);
     }
 
@@ -115,7 +142,7 @@ class IngestRulesTextCommandTest extends TestCase
         $state->body = $this->changedFixture();
         $this->artisan('data:ingest-rules-text')->assertExitCode(0);
 
-        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->first();
+        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
         $diff = json_decode($newest->diff_from_previous, true);
 
         $this->assertContains('1.0.1a', $diff['changed']);
@@ -132,7 +159,7 @@ class IngestRulesTextCommandTest extends TestCase
         $state->body = $this->changedFixture();
         $this->artisan('data:ingest-rules-text')->assertExitCode(0);
 
-        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->first();
+        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
         $diff = json_decode($newest->diff_from_previous, true);
 
         $this->assertContains('1.0.3', $diff['added']);
@@ -148,7 +175,7 @@ class IngestRulesTextCommandTest extends TestCase
         $state->body = $this->changedFixture();
         $this->artisan('data:ingest-rules-text')->assertExitCode(0);
 
-        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->first();
+        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
         $diff = json_decode($newest->diff_from_previous, true);
 
         $this->assertContains('1.-1.1', $diff['removed']);
@@ -171,7 +198,7 @@ class IngestRulesTextCommandTest extends TestCase
         $state->body = $editedPreamble;
         $this->artisan('data:ingest-rules-text')->assertExitCode(0);
 
-        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->first();
+        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
         $diff = json_decode($newest->diff_from_previous, true);
 
         $this->assertSame([], $diff['added']);
@@ -188,7 +215,7 @@ class IngestRulesTextCommandTest extends TestCase
         $state->body = $this->changedFixture();
         $this->artisan('data:ingest-rules-text')->assertExitCode(0);
 
-        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->first();
+        $newest = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
         $diff = json_decode($newest->diff_from_previous, true);
 
         foreach (['added', 'removed', 'changed'] as $key) {
