@@ -1,0 +1,7 @@
+productId,name,cleanName,imageUrl,categoryId,groupId,url,modifiedOn,imageCount,extDescription,lowPrice,midPrice,highPrice,marketPrice,directLowPrice,subTypeName,extRarity,extNumber,extCardType,extTalent,extCost,extPitchValue,extClass,extCardSubType,extPower,extDefenseValue,extFlavorText,extIntellect,extLife
+1001,"Prism - Awakener of Sol",prism-awakener-of-sol,http://example.com/image.jpg,62,2775,http://example.com/product/1001,2026-07-25T00:00:00,1,,,,,40.25,,"1st Edition Normal",Legendary,MON001,Hero,,,,,,,,,,
+1002,"Prism - Awakener of Sol",prism-awakener-of-sol,http://example.com/image.jpg,62,2775,http://example.com/product/1002,2026-07-25T00:00:00,1,,,,,999.99,,"1st Edition Rainbow Foil",Legendary,MON001,Hero,,,,,,,,,,
+1003,"Card Number 2",card-2,http://example.com/image.jpg,62,2775,http://example.com/product/1003,2026-07-25T00:00:00,1,"Whenever you attack, ""boost"" this card",,,,5.30,,Normal,Rare,MON002,Action,,,,,,,,,,
+1004,"Card Number 3",card-3,http://example.com/image.jpg,62,2775,http://example.com/product/1004,2026-07-25T00:00:00,1,,,,,,,Normal,Common,MON003,Action,,,,,,,,,,
+1005,"Monarch Booster Box",monarch-booster-box,http://example.com/box.jpg,62,2775,http://example.com/product/1005,2026-07-25T00:00:00,1,,,,,120.00,,,,,,,,,,,,,,,
+1006,"Card Number 404",card-404,http://example.com/image.jpg,62,2775,http://example.com/product/1006,2026-07-25T00:00:00,1,,,,,12.00,,Normal,Common,MON404,Action,,,,,,,,,,
