@@ -94,6 +94,19 @@ class IngestTcgcsvPricingCommandTest extends TestCase
         $this->assertNotEquals(999.99, (float) $printing->price_cache);
     }
 
+    public function test_exact_normal_subtype_wins_over_edition_prefixed_normal_for_same_ext_number(): void
+    {
+        $this->fakeStandardUpstream();
+
+        $printing = CardPrinting::factory()->create(['cardvault_print_id' => 'MON005']);
+
+        $this->artisan('data:ingest-pricing')->assertExitCode(0);
+
+        $printing->refresh();
+        $this->assertEquals(6.50, (float) $printing->price_cache);
+        $this->assertNotEquals(8.00, (float) $printing->price_cache);
+    }
+
     public function test_unmatched_ext_number_does_not_fail_the_command(): void
     {
         $this->fakeStandardUpstream();
