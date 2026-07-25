@@ -118,6 +118,7 @@ class IngestCardvaultPrintings extends Command
 
             if ($prints === []) {
                 Log::warning('No card_prints in cardvault detail', ['card_id' => $cardId]);
+                $this->warn("No card_prints in cardvault detail for {$cardId}");
                 $this->flagged++;
 
                 continue;

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class CardImageMirror
 {
@@ -14,11 +15,20 @@ class CardImageMirror
     /**
      * Download, resize, and re-encode the given source image as WebP, then
      * upload it to the `spaces` disk. Returns the public Spaces URL, or null
-     * if the download failed or the bytes could not be decoded as an image.
+     * if the download failed, the print id is invalid, the bytes could not
+     * be decoded as an image, or the upload did not succeed.
      */
     public function mirror(string $sourceUrl, string $cardvaultPrintId): ?string
     {
-        $response = Http::timeout(60)->get($sourceUrl);
+        if (! preg_match('/^[A-Za-z0-9_-]+$/', $cardvaultPrintId)) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(60)->get($sourceUrl);
+        } catch (Throwable) {
+            return null;
+        }
 
         if (! $response->successful()) {
             return null;
@@ -32,7 +42,9 @@ class CardImageMirror
 
         $path = "card-printings/{$cardvaultPrintId}.webp";
 
-        Storage::disk('spaces')->put($path, $webpBytes, 'public');
+        if (! Storage::disk('spaces')->put($path, $webpBytes, 'public')) {
+            return null;
+        }
 
         return Storage::disk('spaces')->url($path);
     }

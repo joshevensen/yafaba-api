@@ -37,6 +37,22 @@ class IngestCardvaultPrintingsCommandTest extends TestCase
         return $bytes;
     }
 
+    /**
+     * Generates real GD-decodable image bytes wider than CardImageMirror::MAX_IMAGE_WIDTH,
+     * so tests can assert the resize path actually runs (rather than being vacuously
+     * satisfied by an already-narrow source image).
+     */
+    private function fakeWideWebpBytes(): string
+    {
+        $image = imagecreatetruecolor(960, 1280);
+        ob_start();
+        imagewebp($image);
+        $bytes = ob_get_clean();
+        imagedestroy($image);
+
+        return $bytes;
+    }
+
     private function searchFixture(): array
     {
         return json_decode(file_get_contents(base_path('tests/Fixtures/cardvault-search.json')), true);
@@ -169,6 +185,7 @@ class IngestCardvaultPrintingsCommandTest extends TestCase
 
     public function test_idempotent_rerun_does_not_redownload_or_remirror(): void
     {
+        Storage::fake('spaces');
         $this->fakeStandardUpstream();
         Card::factory()->create(['name' => 'Chorus of Ironsong']);
 
@@ -195,6 +212,7 @@ class IngestCardvaultPrintingsCommandTest extends TestCase
 
     public function test_changed_source_image_url_remirrors_and_updates_hash_and_url(): void
     {
+        Storage::fake('spaces');
         $state = $this->fakeStandardUpstreamWithMutableDetail();
         Card::factory()->create(['name' => 'Chorus of Ironsong']);
 
@@ -338,5 +356,79 @@ class IngestCardvaultPrintingsCommandTest extends TestCase
 
         $this->assertNotSame(Command::SUCCESS, $exitCode);
         $this->assertSame(0, CardPrinting::count());
+    }
+
+    public function test_wide_source_image_is_actually_downscaled(): void
+    {
+        Storage::fake('spaces');
+        Http::fake([
+            '*/advanced-search/*' => Http::response($this->searchFixture()),
+            '*/card_id/*' => Http::response($this->detailFixture()),
+            '*legendstory-production*' => Http::response($this->fakeWideWebpBytes()),
+        ]);
+        Card::factory()->create(['name' => 'Chorus of Ironsong']);
+
+        $this->artisan('data:ingest-printings')->assertExitCode(0);
+
+        $bytes = Storage::disk('spaces')->get('card-printings/DTD208.webp');
+        $size = getimagesizefromstring($bytes);
+
+        $this->assertNotFalse($size);
+        $this->assertSame(480, $size[0]);
+    }
+
+    public function test_undecodable_image_bytes_are_flagged_and_row_still_persisted(): void
+    {
+        Log::spy();
+        Http::fake([
+            '*/advanced-search/*' => Http::response($this->searchFixture()),
+            '*/card_id/*' => Http::response($this->detailFixture()),
+            '*legendstory-production*' => Http::response('not a real image'),
+        ]);
+        Card::factory()->create(['name' => 'Chorus of Ironsong']);
+
+        $this->artisan('data:ingest-printings')->assertExitCode(0);
+
+        $printing = CardPrinting::where('cardvault_print_id', 'DTD208')->first();
+
+        $this->assertNotNull($printing);
+        $this->assertSame('DTD', $printing->set_code);
+        $this->assertNull($printing->image_url);
+
+        Log::shouldHaveReceived('warning')->with('Failed to mirror card image', Mockery::any())->atLeast()->once();
+    }
+
+    public function test_existing_image_is_preserved_when_a_remirror_attempt_fails(): void
+    {
+        Storage::fake('spaces');
+
+        $state = new \stdClass;
+        $state->payload = $this->detailFixture();
+        $state->imageShouldFail = false;
+
+        Http::fake([
+            '*/advanced-search/*' => Http::response($this->searchFixture()),
+            '*/card_id/*' => fn () => Http::response($state->payload),
+            '*legendstory-production*' => fn () => $state->imageShouldFail
+                ? Http::response('', 500)
+                : Http::response($this->fakeWebpBytes()),
+        ]);
+
+        Card::factory()->create(['name' => 'Chorus of Ironsong']);
+
+        $this->assertSame(Command::SUCCESS, $this->runIngestPrintingsFresh());
+
+        $printing = CardPrinting::where('cardvault_print_id', 'DTD208')->firstOrFail();
+        $urlBefore = $printing->image_url;
+        $hashBefore = $printing->image_source_hash;
+
+        $state->payload['results'][0]['card_prints'][0]['faces'][0]['image']['normal'] .= '?v=2';
+        $state->imageShouldFail = true;
+
+        $this->assertSame(Command::SUCCESS, $this->runIngestPrintingsFresh());
+
+        $printing->refresh();
+        $this->assertSame($urlBefore, $printing->image_url);
+        $this->assertSame($hashBefore, $printing->image_source_hash);
     }
 }
