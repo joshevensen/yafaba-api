@@ -1,0 +1,47 @@
+{
+    "count": 2,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "card_id": "chorus-of-ironsong-2",
+            "print_id": "DTD208",
+            "face_id": "DTD208",
+            "is_published": true,
+            "published_at": null,
+            "printed_name": "Chorus of Ironsong",
+            "printed_typebox": "Warrior Attack Reaction",
+            "printed_pitch": 2,
+            "printed_cost": "1",
+            "printed_power": "",
+            "printed_defense": "3",
+            "printed_rules_text": "...",
+            "printed_flavor_text": "",
+            "printed_artist": "Narendra B Adi",
+            "orientation": "vertical",
+            "core_talent": null,
+            "faces": [
+                {
+                    "layout_position": 10,
+                    "image": {
+                        "small": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/small/DTD208.webp",
+                        "normal": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/normal/DTD208.webp",
+                        "large": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/large/DTD208.webp"
+                    }
+                }
+            ]
+        },
+        {
+            "card_id": "chorus-of-ironsong-redux-9",
+            "print_id": "XYZ999",
+            "printed_name": "Chorus of Ironsong Redux",
+            "faces": [
+                {
+                    "image": {
+                        "normal": "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/normal/XYZ999.webp"
+                    }
+                }
+            ]
+        }
+    ]
+}
