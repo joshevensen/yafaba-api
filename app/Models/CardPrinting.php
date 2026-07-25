@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['id', 'card_id', 'set_code', 'rarity', 'finish', 'art_variant', 'image_url', 'cardvault_print_id', 'price_cache', 'price_updated_at'])]
+#[Fillable(['id', 'card_id', 'set_code', 'rarity', 'finish', 'art_variant', 'image_url', 'cardvault_print_id', 'image_source_hash', 'price_cache', 'price_updated_at'])]
 class CardPrinting extends Model
 {
     /** @use HasFactory<CardPrintingFactory> */

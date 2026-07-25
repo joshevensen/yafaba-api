@@ -62,6 +62,7 @@ Small closed reference set. A table (rather than an enum) so each type can carry
 | art_variant | text, nullable | |
 | image_url | text | YaFaBa's own Spaces-hosted copy, mirrored during Enrichment, not hotlinked |
 | cardvault_print_id | text, nullable | reference to unofficial API's ID, for re-sync |
+| image_source_hash | text, nullable | sha256 of the upstream cardvault image URL; skip-if-unchanged key for image mirroring |
 | price_cache | numeric, nullable | from tcgcsv.com |
 | price_updated_at | timestamptz | |
 
