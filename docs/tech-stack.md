@@ -45,6 +45,9 @@
   - Ties directly into the Knowledge Base's ground-truth/draft distinction — if CR text changes, explainers generated against the old wording should be flagged for re-validation, which requires having the old version to diff against
 
 ## External Data Sources & Caveats
+
+> Operational detail (fetch method, caching, target tables, ToS/fallback) lives in [`docs/phases/data/sources.md`](phases/data/sources.md); the table below is the at-a-glance reference.
+
 | Source | Used for | Caveat |
 |---|---|---|
 | [the-fab-cube/flesh-and-blood-cards](https://github.com/the-fab-cube/flesh-and-blood-cards) | Primary card data | Community-maintained, same source fabrary.net uses — reliable but volunteer-dependent |
