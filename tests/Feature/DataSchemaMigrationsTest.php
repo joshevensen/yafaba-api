@@ -24,7 +24,8 @@ class DataSchemaMigrationsTest extends TestCase
             'hero_profiles' => ['id', 'hero_id', 'label', 'pattern_summary', 'complexity_score', 'complexity_rating', 'playstyle_tags', 'pitch_lean', 'notes'],
             'cards' => ['id', 'name', 'card_type_id', 'pitch_value', 'cost', 'power', 'defense', 'functional_text', 'hero_profile_id', 'age', 'hero_profile_match_confidence', 'hero_profile_grouping_status', 'source_hash', 'source_id', 'updated_at'],
             'card_printings' => ['id', 'card_id', 'set_code', 'rarity', 'finish', 'art_variant', 'image_url', 'cardvault_print_id', 'image_source_hash', 'price_cache', 'price_updated_at'],
-            'card_legality' => ['id', 'card_id', 'format', 'status', 'effective_date', 'notes'],
+            'card_legality' => ['id', 'card_id', 'format_id', 'status', 'effective_date', 'notes'],
+            'formats' => ['id', 'name', 'abbreviation', 'rules', 'deck_configuration', 'link', 'display_order', 'notes'],
             'card_classes' => ['card_id', 'class_id'],
             'card_talents' => ['card_id', 'talent_id'],
             'card_keywords' => ['card_id', 'keyword_id'],
@@ -55,6 +56,7 @@ class DataSchemaMigrationsTest extends TestCase
             ],
             'card_legality' => [
                 ['columns' => ['card_id'], 'foreign_table' => 'cards'],
+                ['columns' => ['format_id'], 'foreign_table' => 'formats'],
             ],
             'card_classes' => [
                 ['columns' => ['card_id'], 'foreign_table' => 'cards'],
@@ -134,10 +136,10 @@ class DataSchemaMigrationsTest extends TestCase
         $indexes = Schema::getIndexes('card_legality');
 
         $unique = collect($indexes)->first(
-            fn (array $index) => $index['unique'] && $index['columns'] === ['card_id', 'format']
+            fn (array $index) => $index['unique'] && $index['columns'] === ['card_id', 'format_id']
         );
 
-        $this->assertNotNull($unique, 'card_legality is missing a unique index over [card_id, format].');
+        $this->assertNotNull($unique, 'card_legality is missing a unique index over [card_id, format_id].');
     }
 
     public function test_cards_source_id_is_unique(): void
@@ -187,6 +189,7 @@ class DataSchemaMigrationsTest extends TestCase
             'classes' => 'name',
             'talents' => 'name',
             'keywords' => 'name',
+            'formats' => 'abbreviation',
         ];
     }
 
