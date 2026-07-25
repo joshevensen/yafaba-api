@@ -8,6 +8,7 @@ use App\Models\CardType;
 use App\Models\Hero;
 use App\Models\HeroProfile;
 use App\Models\Keyword;
+use Database\Seeders\FormatSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -26,6 +27,8 @@ class IngestFabCubeCardsCommandTest extends TestCase
         parent::setUp();
 
         Http::preventStrayRequests();
+
+        $this->seed(FormatSeeder::class);
     }
 
     /**
@@ -272,38 +275,38 @@ class IngestFabCubeCardsCommandTest extends TestCase
         $this->artisan('data:ingest-cards')->assertExitCode(0);
 
         $card1 = Card::where('source_id', 'fixture-001')->firstOrFail();
-        $this->assertSame(4, $card1->legalities()->count());
-        $this->assertSame(4, $card1->legalities()->where('status', 'legal')->count());
+        $this->assertSame(2, $card1->legalities()->count());
+        $this->assertSame(2, $card1->legalities()->where('status', 'legal')->count());
 
         $card6 = Card::where('source_id', 'fixture-006')->firstOrFail();
-        $this->assertTrue($card6->legalities()->where('format', 'CC')->where('status', 'banned')->exists());
+        $this->assertTrue($card6->legalities()->whereHas('format', fn ($q) => $q->where('abbreviation', 'CC'))->where('status', 'banned')->exists());
 
         $card7 = Card::where('source_id', 'fixture-007')->firstOrFail();
-        $this->assertTrue($card7->legalities()->where('format', 'Commoner')->where('status', 'suspended')->exists());
+        $this->assertTrue($card7->legalities()->whereHas('format', fn ($q) => $q->where('abbreviation', 'SAGE'))->where('status', 'legal')->exists());
 
         $this->assertSame(
             0,
-            CardLegality::whereNotIn('format', ['SAGE', 'CC', 'Blitz', 'Commoner'])->count(),
+            CardLegality::whereDoesntHave('format', fn ($q) => $q->whereIn('abbreviation', ['SAGE', 'CC']))->count(),
         );
     }
 
     public function test_legality_row_is_deleted_when_a_format_regresses_to_no_flags(): void
     {
-        $legalRecord = $this->baseRecord(['unique_id' => 'legality-regression', 'blitz_legal' => true]);
+        $legalRecord = $this->baseRecord(['unique_id' => 'legality-regression', 'cc_legal' => true]);
         $state = $this->fakeUpstreamMutable([$legalRecord]);
 
         $this->artisan('data:ingest-cards')->assertExitCode(0);
 
         $card = Card::where('source_id', 'legality-regression')->firstOrFail();
-        $this->assertTrue($card->legalities()->where('format', 'Blitz')->where('status', 'legal')->exists());
+        $this->assertTrue($card->legalities()->whereHas('format', fn ($q) => $q->where('abbreviation', 'CC'))->where('status', 'legal')->exists());
 
         $revokedRecord = $legalRecord;
-        $revokedRecord['blitz_legal'] = false;
+        $revokedRecord['cc_legal'] = false;
         $state->payload = [$revokedRecord];
 
         $this->artisan('data:ingest-cards')->assertExitCode(0);
 
-        $this->assertFalse($card->legalities()->where('format', 'Blitz')->exists());
+        $this->assertFalse($card->legalities()->whereHas('format', fn ($q) => $q->where('abbreviation', 'CC'))->exists());
         $this->assertSame(0, $card->legalities()->count());
     }
 

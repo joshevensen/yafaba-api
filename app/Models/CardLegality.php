@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['id', 'card_id', 'format', 'status', 'effective_date', 'notes'])]
+#[Fillable(['id', 'card_id', 'format_id', 'status', 'effective_date', 'notes'])]
 class CardLegality extends Model
 {
     use HasUuids;
@@ -31,5 +31,10 @@ class CardLegality extends Model
     public function card(): BelongsTo
     {
         return $this->belongsTo(Card::class);
+    }
+
+    public function format(): BelongsTo
+    {
+        return $this->belongsTo(Format::class);
     }
 }

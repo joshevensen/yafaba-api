@@ -6,6 +6,7 @@ use App\Models\Card;
 use App\Models\CardClass;
 use App\Models\CardLegality;
 use App\Models\CardType;
+use App\Models\Format;
 use App\Models\Hero;
 use App\Models\HeroProfile;
 use App\Models\Keyword;
@@ -65,8 +66,6 @@ class IngestFabCubeCards extends Command
     private const LEGALITY_FORMATS = [
         'SAGE' => ['legal' => 'silver_age_legal', 'banned' => 'silver_age_banned', 'suspended' => null],
         'CC' => ['legal' => 'cc_legal', 'banned' => 'cc_banned', 'suspended' => 'cc_suspended'],
-        'Blitz' => ['legal' => 'blitz_legal', 'banned' => 'blitz_banned', 'suspended' => 'blitz_suspended'],
-        'Commoner' => ['legal' => 'commoner_legal', 'banned' => 'commoner_banned', 'suspended' => 'commoner_suspended'],
     ];
 
     /**
@@ -89,6 +88,11 @@ class IngestFabCubeCards extends Command
      */
     private array $keywordIds = [];
 
+    /**
+     * @var array<string, int>
+     */
+    private array $formatIds = [];
+
     private int $created = 0;
 
     private int $updated = 0;
@@ -103,6 +107,7 @@ class IngestFabCubeCards extends Command
     public function handle(): int
     {
         $this->seedCardTypes();
+        $this->loadFormatIds();
 
         try {
             $records = $this->fetchRecords();
@@ -148,6 +153,16 @@ class IngestFabCubeCards extends Command
 
             $this->cardTypeIds[$name] = $cardType->id;
         }
+    }
+
+    /**
+     * Load the ids of the formats supported by this ingest, keyed by abbreviation.
+     */
+    private function loadFormatIds(): void
+    {
+        $this->formatIds = Format::whereIn('abbreviation', array_keys(self::LEGALITY_FORMATS))
+            ->pluck('id', 'abbreviation')
+            ->all();
     }
 
     /**
@@ -268,12 +283,6 @@ class IngestFabCubeCards extends Command
             'cc_legal' => $record['cc_legal'] ?? null,
             'cc_banned' => $record['cc_banned'] ?? null,
             'cc_suspended' => $record['cc_suspended'] ?? null,
-            'blitz_legal' => $record['blitz_legal'] ?? null,
-            'blitz_banned' => $record['blitz_banned'] ?? null,
-            'blitz_suspended' => $record['blitz_suspended'] ?? null,
-            'commoner_legal' => $record['commoner_legal'] ?? null,
-            'commoner_banned' => $record['commoner_banned'] ?? null,
-            'commoner_suspended' => $record['commoner_suspended'] ?? null,
         ], JSON_THROW_ON_ERROR));
     }
 
@@ -365,6 +374,15 @@ class IngestFabCubeCards extends Command
     private function syncLegality(Card $card, array $record): void
     {
         foreach (self::LEGALITY_FORMATS as $format => $flags) {
+            if (! isset($this->formatIds[$format])) {
+                Log::warning('Skipping legality sync for unseeded format', ['format' => $format]);
+                $this->warn("Skipping legality sync for unseeded format: {$format}");
+
+                continue;
+            }
+
+            $formatId = $this->formatIds[$format];
+
             $banned = (bool) ($record[$flags['banned']] ?? false);
             $suspended = $flags['suspended'] !== null && (bool) ($record[$flags['suspended']] ?? false);
             $legal = (bool) ($record[$flags['legal']] ?? false);
@@ -377,13 +395,13 @@ class IngestFabCubeCards extends Command
             };
 
             if ($status === null) {
-                CardLegality::where('card_id', $card->id)->where('format', $format)->delete();
+                CardLegality::where('card_id', $card->id)->where('format_id', $formatId)->delete();
 
                 continue;
             }
 
             CardLegality::updateOrCreate(
-                ['card_id' => $card->id, 'format' => $format],
+                ['card_id' => $card->id, 'format_id' => $formatId],
                 ['status' => $status],
             );
         }
