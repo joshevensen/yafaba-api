@@ -9,6 +9,8 @@ That single dataset is what ties the four areas together:
 - **Build** — construct, test, and acquire a deck (guided freeform deckbuilding, proxies, official registration sheets, buying the cards)
 - **Play** — actually play a match (forked from Talishar's engine, mobile-native UI, deterministic in-game reminders)
 
+> **Build sequence.** Delivery is phased back-to-front: **Data → Enrichment → Curation** produce the dataset, then **Read → Build → Play** expose it. Each phase has a spec under [`docs/phases/`](phases/). These backend phases are distinct from the four user-facing areas above — the **Read** phase serves both Learn and Explore.
+
 The design has held to a consistent philosophy through all of this: **AI does the hard work once, at Enrichment time; everything a user actually touches at runtime is deterministic — DB lookups, cached data, rule-based suggestions.** No live AI coaching, no open-ended rules chat, no runtime inference cost. That's what makes an ambitious scope like this actually buildable by one person: the expensive part happens on a schedule, not per request.
 
 This started as — and still is — something Josh wants to build for himself first. It's being open sourced (code and API) partly because direct monetization isn't viable under LSS's IP terms anyway, and partly because it means someone else could build on it (an Android client, for instance) without that being Josh's problem to solve. Server costs are expected to be a rounding error against what the game costs to play anyway; any Patreon/ad/affiliate revenue is a bonus that offsets hosting, not something the project depends on to be worth building.
@@ -34,6 +36,8 @@ This started as — and still is — something Josh wants to build for himself f
 
 ## Enrichment (Scheduled Job)
 Runs on a schedule (set release + periodic refresh), producing fully static/cached data — nothing here happens at request time.
+
+> This section is the product-level overview. The operational spec is split across the production phases: ingestion in [`docs/phases/data/sources.md`](phases/data/sources.md), card-level AI in [`docs/phases/enrichment/enrichment.md`](phases/enrichment/enrichment.md), and class/hero profiles + guides in [`docs/phases/curation/curation.md`](phases/curation/curation.md).
 
 1. **Pull latest card data** — fab-cube JSON (card fields) + tcgcsv.com (pricing/product data) + cardvault API (print variations/product catalog); download and mirror any new/changed card images to Spaces during this step, so `card_printings.image_url` always points at YaFaBa's own hosted copy, never the source directly
 2. **Pull latest rules text** — en-fab-cr.txt, re-parsed each run in case of rules updates (new sets sometimes bring rules changes/errata)
@@ -101,11 +105,12 @@ Structured, guided content for getting oriented — no card-by-card lookup requi
      6. **Color/pitch lean** (optional) — real decklist-verified red/yellow/blue lean, not guessed from ability cost alone
      - Bonus: lore/flavor fit (talent-sharing and story connections)
    - Ends in a scorecard comparing surviving heroes side by side on the user's own stated priorities — app renders this instead of the user filling out a manual worksheet
+   - **Find Your Hero (Stage 2)** — once a class is chosen, a second quiz scores heroes *within* it (over `hero_profiles`: complexity, playstyle, pitch lean), ending in a per-hero scorecard. Same deterministic, no-AI scoring as Stage 1; handles young/adult and variant printings via a distinct-options-vs-fold-under-base toggle
 
 2. **Class Guides**
    - Standalone learning content per class, browsable independent of deckbuilding
    - Pulls from the same card explainer data used everywhere else in the app
-   - Future: Hero Guides (deeper, per-hero version of the same idea)
+   - **Hero Guides** — deeper, per-hero-profile guides (same explainer data, hero grain). Class/Hero Guides and the Find Your Class/Hero scoring are all produced by the **Curation** phase (`docs/phases/curation/`)
 
 3. **How to Play**
    - Static, tiered onboarding content — authored once, not a live Q&A tool. Distinct from the excluded "general rules reference": this is a fixed curriculum, not open-ended rules lookup

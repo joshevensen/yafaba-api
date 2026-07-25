@@ -11,14 +11,22 @@ First pass at every screen implied by the app design doc, organized by area. Som
 
 ## Learn
 
-**Find Your Class**
+**Find Your Class (Stage 1)**
 - Intro screen (explains the process)
 - Question screens — one screen per step (Steps 1–6)
-- Scorecard / Results screen (comparing surviving heroes)
+- Scorecard / Results screen (comparing surviving classes/heroes) — leads into Find Your Hero
+
+**Find Your Hero (Stage 2)**
+- Question screens — hero-level quiz within a chosen class (scores over `hero_profiles`: complexity, playstyle, pitch lean)
+- Hero scorecard / Results screen (comparing heroes in that class; variant toggle for young/adult and alt printings)
 
 **Class Guides**
 - Class Guide list/browse screen
 - Class Guide detail screen
+
+**Hero Guides**
+- Hero Guide list/browse screen (per class)
+- Hero Guide detail screen (per hero, deeper than the class guide)
 
 **How to Play**
 - Tier selector (New / Intermediate / Advanced)
