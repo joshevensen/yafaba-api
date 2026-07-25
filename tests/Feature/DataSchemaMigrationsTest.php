@@ -22,7 +22,7 @@ class DataSchemaMigrationsTest extends TestCase
             'keywords' => ['id', 'name', 'rules_text', 'explainer', 'cited_rules', 'notes'],
             'heroes' => ['id', 'name', 'lore', 'flavor', 'notes'],
             'hero_profiles' => ['id', 'hero_id', 'label', 'pattern_summary', 'complexity_score', 'complexity_rating', 'playstyle_tags', 'pitch_lean', 'notes'],
-            'cards' => ['id', 'name', 'card_type_id', 'pitch_value', 'cost', 'power', 'defense', 'functional_text', 'hero_profile_id', 'age', 'hero_profile_match_confidence', 'hero_profile_grouping_status', 'source_hash', 'updated_at'],
+            'cards' => ['id', 'name', 'card_type_id', 'pitch_value', 'cost', 'power', 'defense', 'functional_text', 'hero_profile_id', 'age', 'hero_profile_match_confidence', 'hero_profile_grouping_status', 'source_hash', 'source_id', 'updated_at'],
             'card_printings' => ['id', 'card_id', 'set_code', 'rarity', 'finish', 'art_variant', 'image_url', 'cardvault_print_id', 'price_cache', 'price_updated_at'],
             'card_legality' => ['id', 'card_id', 'format', 'status', 'effective_date', 'notes'],
             'card_classes' => ['card_id', 'class_id'],
@@ -138,6 +138,17 @@ class DataSchemaMigrationsTest extends TestCase
         );
 
         $this->assertNotNull($unique, 'card_legality is missing a unique index over [card_id, format].');
+    }
+
+    public function test_cards_source_id_is_unique(): void
+    {
+        $indexes = Schema::getIndexes('cards');
+
+        $unique = collect($indexes)->first(
+            fn (array $index) => $index['unique'] && $index['columns'] === ['source_id']
+        );
+
+        $this->assertNotNull($unique, 'cards is missing a unique index over [source_id].');
     }
 
     /**

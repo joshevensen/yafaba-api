@@ -13,7 +13,7 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 
 | Source | Provides | Fetch | Target tables | Key caveat |
 |---|---|---|---|---|
-| [the-fab-cube/flesh-and-blood-cards](https://github.com/the-fab-cube/flesh-and-blood-cards/tree/develop/json/english) | Card data (text, stats, types, class/talent, legality) | Git/raw JSON | `cards`, `card_types`, `card_classes/talents/keywords`, `heroes`/`hero_profiles` seed, `card_legality` | Community-maintained (volunteer-dependent) |
+| [the-fab-cube/flesh-and-blood-cards](https://github.com/the-fab-cube/flesh-and-blood-cards/tree/develop/json/english) | Card data (text, stats, types, class/talent, legality) | raw JSON fetch (single file) | `cards`, `card_types`, `card_classes/talents/keywords`, `heroes`/`hero_profiles` seed, `card_legality` | Community-maintained (volunteer-dependent) |
 | [tcgcsv.com](https://tcgcsv.com/) | Pricing / product data | CSV download | `card_printings.price_cache` | — |
 | `api.cardvault.fabtcg.com` | Printings, finishes, layout, images (~25k prints) | JSON API | `card_printings` (+ image mirror) | **Unofficial / reverse-engineered** — cache hard, build a fallback |
 | [rules.fabtcg.com/txt/latest/en-fab-cr.txt](https://rules.fabtcg.com/txt/latest/en-fab-cr.txt) | Comprehensive Rules text | Plain-text fetch | `rules_text_versions`, `kb_documents` | Versioned snapshot every fetch (never overwrite) |
@@ -25,8 +25,8 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 ---
 
 ## Card data — the-fab-cube JSON
-- **What:** the primary card-text source (same feed fabrary.net runs on) — per-set English JSON files.
-- **Fetch:** clone/pull the repo (or fetch raw `json/english/*.json`); parse per card.
+- **What:** the primary card-text source (same feed fabrary.net runs on) — a single English JSON file covering all cards.
+- **Fetch:** HTTP fetch of `https://raw.githubusercontent.com/the-fab-cube/flesh-and-blood-cards/develop/json/english/card.json` (single file, ~4,862 card objects, ~22.7 MB); parse per card from the array.
 - **Populates:** `cards` (name, type, pitch, cost, power, defense, functional_text), `card_types` (upsert the closed set), the `card_classes` / `card_talents` / `card_keywords` joins (parsed from the card's type/talent/keyword fields), `card_legality` (per-format flags → rows), and the seed for `heroes` / `hero_profiles` (hero-type cards; profile grouping happens in enrichment).
 - **Idempotency:** `cards.source_hash` = hash of the upstream record; unchanged → skip. New/changed → re-run downstream enrichment for that card.
 - **Caveat:** volunteer-maintained; treat structure as stable but validate on parse (unknown type/talent → flag, don't silently drop).
