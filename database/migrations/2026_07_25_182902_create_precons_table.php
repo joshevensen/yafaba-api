@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('set_code')->nullable();
             $table->string('type')->nullable();
-            $table->foreignUuid('hero_card_id')->nullable()->constrained('cards');
+            $table->foreignUuid('hero_card_id')->nullable()->index()->constrained('cards');
             $table->date('release_date')->nullable();
             $table->text('notes')->nullable();
         });

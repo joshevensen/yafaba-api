@@ -166,6 +166,61 @@ class DataSchemaMigrationsTest extends TestCase
         }
     }
 
+    /**
+     * @return array<string, string>
+     */
+    private function expectedUniqueColumns(): array
+    {
+        return [
+            'card_types' => 'name',
+            'classes' => 'name',
+            'talents' => 'name',
+            'keywords' => 'name',
+        ];
+    }
+
+    public function test_lookup_table_names_are_unique(): void
+    {
+        foreach ($this->expectedUniqueColumns() as $table => $column) {
+            $indexes = Schema::getIndexes($table);
+
+            $unique = collect($indexes)->first(
+                fn (array $index) => $index['unique'] && $index['columns'] === [$column]
+            );
+
+            $this->assertNotNull($unique, "Table [{$table}] is missing a unique index over [{$column}].");
+        }
+    }
+
+    /**
+     * @return array<int, array{table: string, columns: array<int, string>}>
+     */
+    private function expectedIndexedColumns(): array
+    {
+        return [
+            ['table' => 'cards', 'columns' => ['name']],
+            ['table' => 'cards', 'columns' => ['card_type_id']],
+            ['table' => 'card_printings', 'columns' => ['set_code']],
+            ['table' => 'hero_profiles', 'columns' => ['hero_id']],
+            ['table' => 'precons', 'columns' => ['hero_card_id']],
+            ['table' => 'meta_snapshots', 'columns' => ['hero_id', 'format']],
+            ['table' => 'staple_stats', 'columns' => ['hero_id', 'card_id']],
+        ];
+    }
+
+    public function test_expected_columns_are_indexed(): void
+    {
+        foreach ($this->expectedIndexedColumns() as $expected) {
+            $indexes = Schema::getIndexes($expected['table']);
+
+            $found = collect($indexes)->first(
+                fn (array $index) => $index['columns'] === $expected['columns']
+            );
+
+            $this->assertNotNull($found, "Table [{$expected['table']}] is missing an index over [".implode(',', $expected['columns']).'].');
+        }
+    }
+
     public function test_migrations_roll_back_completely(): void
     {
         $this->artisan('migrate:reset')->assertExitCode(0);

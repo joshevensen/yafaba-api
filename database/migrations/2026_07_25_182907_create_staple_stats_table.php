@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('staple_stats', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('hero_id')->constrained('cards');
-            $table->foreignUuid('card_id')->constrained('cards');
+            $table->foreignUuid('card_id')->index()->constrained('cards');
             $table->decimal('inclusion_rate', 5, 4)->nullable();
             $table->string('source');
             $table->timestampTz('fetched_at');

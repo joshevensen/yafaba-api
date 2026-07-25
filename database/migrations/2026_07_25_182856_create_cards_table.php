@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('cards', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name')->index();
-            $table->unsignedInteger('card_type_id');
+            $table->unsignedInteger('card_type_id')->index();
             $table->foreign('card_type_id')->references('id')->on('card_types');
             $table->integer('pitch_value')->nullable();
             $table->text('cost')->nullable();
             $table->integer('power')->nullable();
             $table->integer('defense')->nullable();
             $table->text('functional_text')->nullable();
-            $table->foreignUuid('hero_profile_id')->nullable()->constrained('hero_profiles');
+            $table->foreignUuid('hero_profile_id')->nullable()->index()->constrained('hero_profiles');
             $table->string('age')->nullable();
             $table->decimal('hero_profile_match_confidence', 5, 4)->nullable();
             $table->string('hero_profile_grouping_status')->nullable();

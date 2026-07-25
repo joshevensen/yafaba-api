@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('hero_profiles', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('hero_id')->constrained('heroes');
+            $table->foreignUuid('hero_id')->index()->constrained('heroes');
             $table->string('label');
             $table->text('pattern_summary')->nullable();
             $table->integer('complexity_score')->nullable();

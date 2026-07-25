@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('card_printings', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('card_id')->constrained('cards');
+            $table->foreignUuid('card_id')->index()->constrained('cards');
             $table->string('set_code')->index();
             $table->string('rarity')->nullable();
             $table->string('finish')->nullable();
