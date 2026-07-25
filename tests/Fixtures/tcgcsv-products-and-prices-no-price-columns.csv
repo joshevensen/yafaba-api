@@ -1,0 +1,2 @@
+productId,name,cleanName,imageUrl,categoryId,groupId,url,modifiedOn,imageCount,extRarity,extNumber,extDescription,extCardType,extCardSubType,extClass,extTalent,extIntellect,extLife,extPower
+2001,"Valiant Hero",valiant-hero,http://example.com/image.jpg,62,24773,http://example.com/product/2001,2026-07-25T00:00:00,1,Mythic,SPW001,"A powerful hero from the realm",Hero,,,,,,
