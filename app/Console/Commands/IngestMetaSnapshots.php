@@ -426,7 +426,7 @@ class IngestMetaSnapshots extends Command
             throw new RuntimeException('Failed to decode fablazing payload pool');
         }
 
-        $root = $this->resolvePoolValue($pool, 0);
+        $root = $this->resolvePoolValue($pool, 0, 0);
 
         if (! is_array($root)) {
             throw new RuntimeException('fablazing payload root did not resolve to an array');
@@ -438,14 +438,25 @@ class IngestMetaSnapshots extends Command
     }
 
     /**
+     * Maximum recursion depth for resolvePoolValue(), guarding against a
+     * malicious or malformed upstream payload with cyclic or very deeply
+     * chained pool references (the pool is fully attacker-controlled data).
+     */
+    private const MAX_POOL_DEPTH = 64;
+
+    /**
      * Resolve a value out of fablazing's index-addressed value pool.
      * Objects and arrays store their entries as further pool indices;
      * terminal scalars are returned as-is once reached directly.
      */
-    private function resolvePoolValue(array $pool, ?int $idx): mixed
+    private function resolvePoolValue(array $pool, ?int $idx, int $depth): mixed
     {
         if ($idx === null || $idx === self::POOL_UNDEFINED || ! array_key_exists($idx, $pool)) {
             return null;
+        }
+
+        if ($depth > self::MAX_POOL_DEPTH) {
+            throw new RuntimeException('fablazing payload pool exceeded the maximum resolution depth');
         }
 
         $value = $pool[$idx];
@@ -458,13 +469,13 @@ class IngestMetaSnapshots extends Command
                     continue;
                 }
 
-                $key = $this->resolvePoolValue($pool, (int) substr($keyToken, 1));
+                $key = $this->resolvePoolValue($pool, (int) substr($keyToken, 1), $depth + 1);
 
                 if (! is_string($key)) {
                     continue;
                 }
 
-                $result[$key] = $this->resolvePoolValue($pool, is_int($valueIdx) ? $valueIdx : null);
+                $result[$key] = $this->resolvePoolValue($pool, is_int($valueIdx) ? $valueIdx : null, $depth + 1);
             }
 
             return $result;
@@ -472,7 +483,7 @@ class IngestMetaSnapshots extends Command
 
         if (is_array($value)) {
             return array_map(
-                fn ($v) => $this->resolvePoolValue($pool, is_int($v) ? $v : null),
+                fn ($v) => $this->resolvePoolValue($pool, is_int($v) ? $v : null, $depth + 1),
                 $value
             );
         }
