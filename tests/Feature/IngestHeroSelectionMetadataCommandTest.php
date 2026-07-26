@@ -352,6 +352,67 @@ class IngestHeroSelectionMetadataCommandTest extends TestCase
         $this->assertSame(['aggressive', 'midrange'], $seeded['profile']->fresh()->playstyle_tags);
     }
 
+    public function test_decodes_html_entities_before_stripping_so_encoded_markup_cannot_survive(): void
+    {
+        $this->seed(FormatSeeder::class);
+        $seeded = $this->seedHeroCard('Dorinthea Ironsong');
+
+        Http::fake([
+            'https://fabtcg.com/api/fab/v2/heroes/*' => Http::response([
+                'heroes' => [[
+                    'title' => 'Dorinthea',
+                    'subtitle' => 'Ironsong',
+                    'bio' => 'Safe text &lt;script&gt;alert(1)&lt;/script&gt; end.',
+                    'playstyle' => ['aggressive'],
+                    'format' => [],
+                ]],
+                'filters' => [],
+            ]),
+        ]);
+
+        Artisan::call('data:ingest-hero-selection');
+
+        $lore = $seeded['hero']->fresh()->lore;
+
+        $this->assertStringNotContainsString('<', $lore);
+        $this->assertStringNotContainsString('>', $lore);
+        $this->assertSame('Safe text alert(1) end.', $lore);
+    }
+
+    public function test_multiple_hero_cards_sharing_a_name_all_receive_writes(): void
+    {
+        $this->seed(FormatSeeder::class);
+        $first = $this->seedHeroCard('Dorinthea Ironsong');
+        $second = $this->seedHeroCard('Dorinthea Ironsong');
+        $this->fakeHeroSelectionApi();
+
+        Artisan::call('data:ingest-hero-selection');
+
+        $this->assertSame(['aggressive', 'midrange'], $first['profile']->fresh()->playstyle_tags);
+        $this->assertSame(['aggressive', 'midrange'], $second['profile']->fresh()->playstyle_tags);
+
+        $ccId = Format::where('abbreviation', 'CC')->value('id');
+        $this->assertSame(1, CardLegality::where('card_id', $first['card']->id)->where('format_id', $ccId)->count());
+        $this->assertSame(1, CardLegality::where('card_id', $second['card']->id)->where('format_id', $ccId)->count());
+    }
+
+    public function test_flags_hero_card_with_no_hero_profile_without_aborting(): void
+    {
+        $this->seed(FormatSeeder::class);
+        $heroTypeId = CardType::firstOrCreate(['name' => 'hero'], ['display_order' => 1])->id;
+        Card::factory()->create(['name' => 'Dorinthea Ironsong', 'card_type_id' => $heroTypeId, 'hero_profile_id' => null]);
+        $this->fakeHeroSelectionApi();
+
+        Log::spy();
+
+        $exitCode = Artisan::call('data:ingest-hero-selection');
+
+        $this->assertSame(Command::SUCCESS, $exitCode);
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message) => str_contains($message, 'Hero card has no hero profile'))
+            ->atLeast()->once();
+    }
+
     public function test_requests_the_hero_api_with_the_project_user_agent(): void
     {
         $this->seed(FormatSeeder::class);

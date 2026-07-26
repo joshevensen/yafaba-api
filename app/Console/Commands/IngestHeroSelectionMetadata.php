@@ -9,6 +9,7 @@ use App\Models\Format;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -88,7 +89,7 @@ class IngestHeroSelectionMetadata extends Command
         $formatIdsByKey = $this->loadFormatIdsByKey();
 
         $this->withProgressBar($heroes, function (array $hero) use ($heroTypeId, $formatIdsByKey): void {
-            $this->ingestHero($hero, $heroTypeId, $formatIdsByKey);
+            $this->ingestHero($hero, (int) $heroTypeId, $formatIdsByKey);
         });
 
         $this->newLine(2);
@@ -139,7 +140,7 @@ class IngestHeroSelectionMetadata extends Command
      * keyed by fabtcg key. A mapped abbreviation with no seeded `Format`
      * row is warned once and simply absent from the result.
      *
-     * @return array<string, string>
+     * @return array<string, int>
      */
     private function loadFormatIdsByKey(): array
     {
@@ -159,7 +160,7 @@ class IngestHeroSelectionMetadata extends Command
                 continue;
             }
 
-            $idsByKey[$key] = $id;
+            $idsByKey[$key] = (int) $id;
         }
 
         return $idsByKey;
@@ -170,9 +171,9 @@ class IngestHeroSelectionMetadata extends Command
      * apply playstyle tags, lore, and legality to each.
      *
      * @param  array<string, mixed>  $hero
-     * @param  array<string, string>  $formatIdsByKey
+     * @param  array<string, int>  $formatIdsByKey
      */
-    private function ingestHero(array $hero, string $heroTypeId, array $formatIdsByKey): void
+    private function ingestHero(array $hero, int $heroTypeId, array $formatIdsByKey): void
     {
         $name = $this->buildHeroName($hero);
         $cards = $this->resolveHeroCards($name, $heroTypeId);
@@ -209,9 +210,9 @@ class IngestHeroSelectionMetadata extends Command
      * Resolve every hero card matching the given name, case-insensitively,
      * restricted to the hero card type.
      *
-     * @return \Illuminate\Support\Collection<int, Card>
+     * @return Collection<int, Card>
      */
-    private function resolveHeroCards(string $name, string $heroTypeId)
+    private function resolveHeroCards(string $name, int $heroTypeId)
     {
         return Card::where('card_type_id', $heroTypeId)
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
@@ -223,7 +224,7 @@ class IngestHeroSelectionMetadata extends Command
      * card against one fabtcg hero object.
      *
      * @param  array<string, mixed>  $hero
-     * @param  array<string, string>  $formatIdsByKey
+     * @param  array<string, int>  $formatIdsByKey
      */
     private function ingestHeroCard(Card $card, array $hero, string $name, array $formatIdsByKey): void
     {
@@ -302,9 +303,9 @@ class IngestHeroSelectionMetadata extends Command
         }
 
         $bio = (string) ($hero['bio'] ?? '');
-        $stripped = strip_tags($bio);
-        $decoded = html_entity_decode($stripped, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $lore = $this->normalizeText($decoded);
+        $decoded = html_entity_decode($bio, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $stripped = strip_tags($decoded);
+        $lore = $this->normalizeText($stripped);
 
         if ($lore === '') {
             Log::warning('Missing fabtcg hero bio', ['name' => $name]);
@@ -329,7 +330,7 @@ class IngestHeroSelectionMetadata extends Command
      * wrote, and never deletes rows.
      *
      * @param  array<string, mixed>  $hero
-     * @param  array<string, string>  $formatIdsByKey
+     * @param  array<string, int>  $formatIdsByKey
      */
     private function syncOfficialLegality(Card $card, array $hero, string $name, array $formatIdsByKey): bool
     {
@@ -400,7 +401,7 @@ class IngestHeroSelectionMetadata extends Command
      * Write (or overwrite) the card_legality row for one (card, format)
      * pair, tallying created vs. updated.
      */
-    private function persistLegality(string $cardId, string $formatId, string $status): void
+    private function persistLegality(string $cardId, int $formatId, string $status): void
     {
         $existing = CardLegality::where('card_id', $cardId)->where('format_id', $formatId)->first();
 
