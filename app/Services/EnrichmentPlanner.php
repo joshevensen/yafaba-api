@@ -24,6 +24,9 @@ class EnrichmentPlanner
 {
     private const FAN_OUT_STEPS = ['explainer', 'combo', 'synergy'];
 
+    /** @var array<string, Collection<int, string>> memoizes cardScopeFor() per step for one planning pass */
+    private array $cardScopeCache = [];
+
     /**
      * Resolve the ordered subset of config('enrichment.steps') to run.
      *
@@ -62,6 +65,13 @@ class EnrichmentPlanner
             return collect();
         }
 
+        $cacheKey = $step.'|'.($context->fresh ? '1' : '0');
+
+        return $this->cardScopeCache[$cacheKey] ??= $this->queryCardScopeFor($step, $context);
+    }
+
+    private function queryCardScopeFor(string $step, EnrichmentRunContext $context): Collection
+    {
         $query = Card::query();
 
         if (! $context->fresh) {

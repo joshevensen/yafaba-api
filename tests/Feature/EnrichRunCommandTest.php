@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Tests\Support\ThrowingTestJob;
 use Tests\TestCase;
 
 class EnrichRunCommandTest extends TestCase
@@ -236,8 +237,28 @@ class EnrichRunCommandTest extends TestCase
     public function test_chain_catch_marks_pipeline_run_failed(): void
     {
         $run = app(PipelineRunRecorder::class)->start(PipelineRun::PHASE_ENRICHMENT, 'enrich:run', 'manual');
+        $runId = $run->id;
 
-        app(PipelineRunRecorder::class)->fail($run, 'boom');
+        // Mirrors EnrichRun::runPipeline()'s exact catch-callback pattern: a
+        // static closure capturing only the run id, resolving the recorder
+        // via the container — proving that pattern actually wires up through
+        // a real Bus::chain()->catch() dispatch, not just PipelineRunRecorder
+        // in isolation. The sync queue connection rethrows the job's
+        // exception after invoking chain catch callbacks, so it's expected
+        // here (not a test failure).
+        try {
+            Bus::chain([new ThrowingTestJob])
+                ->catch(static function (\Throwable $e) use ($runId): void {
+                    $run = PipelineRun::find($runId);
+
+                    if ($run !== null) {
+                        app(PipelineRunRecorder::class)->fail($run, $e->getMessage());
+                    }
+                })
+                ->dispatch();
+        } catch (\Throwable) {
+            // Expected: SyncQueue rethrows after invoking chain catch callbacks.
+        }
 
         $run->refresh();
 

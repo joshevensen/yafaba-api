@@ -20,9 +20,22 @@ final readonly class EnrichmentRunContext
         public array $plannedCounts = [],
     ) {}
 
-    public function includes(string $step): bool
+    /**
+     * @param  array<string, int>  $plannedCounts
+     */
+    public function withPlannedCounts(array $plannedCounts): self
     {
-        return in_array($step, $this->steps, true);
+        return new self(
+            pipelineRunId: $this->pipelineRunId,
+            steps: $this->steps,
+            fresh: $this->fresh,
+            dryRun: $this->dryRun,
+            cardId: $this->cardId,
+            via: $this->via,
+            triggeredBy: $this->triggeredBy,
+            promptVersion: $this->promptVersion,
+            plannedCounts: $plannedCounts,
+        );
     }
 
     public function isDryRun(): bool

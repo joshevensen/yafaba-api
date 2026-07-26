@@ -118,30 +118,17 @@ class EnrichRun extends Command
         );
 
         $counts = $this->planner->plannedCounts($draftContext);
-
-        $context = new EnrichmentRunContext(
-            pipelineRunId: $draftContext->pipelineRunId,
-            steps: $draftContext->steps,
-            fresh: $draftContext->fresh,
-            dryRun: $draftContext->dryRun,
-            cardId: $draftContext->cardId,
-            via: $draftContext->via,
-            triggeredBy: $draftContext->triggeredBy,
-            promptVersion: $draftContext->promptVersion,
-            plannedCounts: $counts,
-        );
-
+        $context = $draftContext->withPlannedCounts($counts);
         $chain = $this->planner->buildChain($context);
-        $recorder = $this->recorder;
         $runId = $run->id;
 
         Bus::chain($chain)
             ->onQueue((string) config('enrichment.queue'))
-            ->catch(static function (Throwable $e) use ($recorder, $runId): void {
+            ->catch(static function (Throwable $e) use ($runId): void {
                 $run = PipelineRun::find($runId);
 
                 if ($run !== null) {
-                    $recorder->fail($run, $e->getMessage());
+                    app(PipelineRunRecorder::class)->fail($run, $e->getMessage());
                 }
             })
             ->dispatch();

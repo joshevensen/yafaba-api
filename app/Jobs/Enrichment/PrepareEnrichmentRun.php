@@ -19,7 +19,7 @@ class PrepareEnrichmentRun extends EnrichmentJob
         Log::info('enrichment.plan', [
             'steps' => $this->context->steps,
             'fresh' => $this->context->fresh,
-            'dry_run' => $this->context->dryRun,
+            'dry_run' => $this->context->isDryRun(),
             'via' => $this->context->via,
             'prompt_version' => $this->context->promptVersion,
         ]);
