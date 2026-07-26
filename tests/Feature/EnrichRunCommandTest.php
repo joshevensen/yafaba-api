@@ -50,9 +50,25 @@ class EnrichRunCommandTest extends TestCase
 
     public function test_help_lists_all_options(): void
     {
-        $exitCode = $this->artisan('enrich:run', ['--help' => true])->run();
+        $this->artisan('enrich:run', ['--help' => true])
+            ->assertExitCode(Command::SUCCESS)
+            ->expectsOutputToContain('--only')
+            ->expectsOutputToContain('--fresh')
+            ->expectsOutputToContain('--dry-run')
+            ->expectsOutputToContain('--card')
+            ->expectsOutputToContain('--via')
+            ->expectsOutputToContain('--triggered-by');
+    }
 
-        $this->assertSame(Command::SUCCESS, $exitCode);
+    public function test_gated_no_op_exits_success(): void
+    {
+        Bus::fake();
+
+        PipelineRun::factory()->enrichment()->create(['finished_at' => now()->subHour()]);
+
+        $this->artisan('enrich:run', ['--triggered-by' => 'scheduled'])->assertExitCode(Command::SUCCESS);
+
+        Bus::assertNothingDispatched();
     }
 
     public function test_dispatches_full_chain_in_order_with_no_only(): void
