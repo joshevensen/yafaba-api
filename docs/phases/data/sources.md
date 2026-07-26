@@ -19,7 +19,7 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 | [rules.fabtcg.com/txt/latest/en-fab-cr.txt](https://rules.fabtcg.com/txt/latest/en-fab-cr.txt) | Comprehensive Rules text | Plain-text fetch | `rules_text_versions`, `kb_documents` | Versioned snapshot every fetch (never overwrite) |
 | [fabtcg.com errata bulletins](https://fabtcg.com/rules-and-policy-center/errata-bulletins/) | Functional errata | Scrape index + articles | `errata_bulletins`, `kb_documents` | No API; scrape once, never re-scrape |
 | fabtcgmeta.com, fablazing.com | Tier lists / win rates | Scrape | `meta_snapshots` | **ToS check per source** before caching |
-| [FABREC (fabrec.gg)](https://fabrec.gg/) / Spellvoid | Staple / inclusion rates | Scrape | `staple_stats` | No public API; **ToS check** |
+| [FABREC (fabrec.gg)](https://fabrec.gg/) / Spellvoid | Staple / inclusion rates | Scrape | `staple_stats` | No public API; no ToS/robots restriction found |
 | fabtcg.com/hero-selection *(candidate)* | Official playstyle/archetype tags, format flags | Scrape | `hero_profiles.playstyle_tags`, `card_legality` | Confirm it exposes structured data |
 
 ---
@@ -62,8 +62,8 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 - **Populates:** `meta_snapshots` (hero card, format, win_rate, sample_size, source, fetched_at). The app queries only this cache — never the external sites live.
 
 ## Staples / inclusion — FABREC / Spellvoid
-- **What:** decklist-derived staple/inclusion-rate stats (which cards show up most for a hero).
-- **Fetch:** no public API found — scraping candidate. **ToS check required.**
+- **What:** decklist-derived staple/inclusion-rate stats (which cards show up most for a hero), scraped from each hero's `fabrec.gg/hero/{slug}` page.
+- **Fetch:** no public API — scrape per-hero pages, one per hero card already in `cards`. **ToS check performed:** fabrec.gg has no `robots.txt` (404) and no dedicated Terms of Service page found; its `/privacy` page is a Mediavine ad-cookie policy with no scraping/reuse restriction. No explicit prohibition on scraping or caching was found anywhere on the site. Spellvoid.com (a companion site fabrec.gg links to) exposes no separate inclusion-rate feature, so it is not scraped.
 - **Populates:** `staple_stats` (hero card, card, inclusion_rate, source, fetched_at).
 
 ## Hero metadata — fabtcg.com/hero-selection *(candidate)*
@@ -95,5 +95,4 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 **Data ingests every fact a source provides; [Curation](../curation/curation.md) derives/authors what none does.** Ingested here: rosters, ability text, talents, legality, rarity, precon membership, win-rate/tier, staples, and — candidate — official playstyle/lore tags. Left to Curation: complexity scoring, computed pitch lean, set-concentration, mechanical-theme synthesis, guides, and quiz design.
 
 ## Open questions
-- **Staples ToS.** Confirm FABREC/Spellvoid permits caching before building the scraper; may need attribution or opt-out.
 - **cardvault fallback.** Define the degraded path if the unofficial API changes/blocks (fab-cube imagery? last cache?).
