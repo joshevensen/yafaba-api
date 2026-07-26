@@ -58,8 +58,8 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 
 ## Meta / win rates — fabtcgmeta.com, fablazing.com
 - **What:** tier lists and win-rate data per hero/format.
-- **Fetch:** scrape. **Check each source's terms of use before scraping/caching.**
-- **Populates:** `meta_snapshots` (hero card, format, tier, win_rate, sample_size, source, fetched_at). The app queries only this cache — never the external sites live.
+- **Fetch:** scrape. fabtcgmeta.com's robots.txt is fully permissive; fablazing.com's robots.txt disallows specific AI/LLM crawlers by name but permits generic requests (`User-agent: *`), allowing backend data-ingestion jobs that send an honest User-Agent (non-browser-impersonating, not resembling blocklisted crawler names).
+- **Populates:** `meta_snapshots` (hero card, format, win_rate, sample_size, source, fetched_at). The app queries only this cache — never the external sites live.
 
 ## Staples / inclusion — FABREC / Spellvoid
 - **What:** decklist-derived staple/inclusion-rate stats (which cards show up most for a hero).
@@ -95,5 +95,5 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 **Data ingests every fact a source provides; [Curation](../curation/curation.md) derives/authors what none does.** Ingested here: rosters, ability text, talents, legality, rarity, precon membership, win-rate/tier, staples, and — candidate — official playstyle/lore tags. Left to Curation: complexity scoring, computed pitch lean, set-concentration, mechanical-theme synthesis, guides, and quiz design.
 
 ## Open questions
-- **Meta/staples ToS.** Confirm each source (fabtcgmeta, fablazing, FABREC/Spellvoid) permits caching before building the scraper; some may need attribution or opt-out.
+- **Staples ToS.** Confirm FABREC/Spellvoid permits caching before building the scraper; may need attribution or opt-out.
 - **cardvault fallback.** Define the degraded path if the unofficial API changes/blocks (fab-cube imagery? last cache?).

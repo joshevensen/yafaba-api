@@ -274,11 +274,10 @@ Batch-pulled during Enrichment (step 7); the app queries only this cache, never 
 |---|---|---|
 | id | uuid, PK | |
 | hero_id | uuid, FK → cards | the hero card (format-specific) |
-| format | text | SAGE / CC / Blitz |
-| tier | text, nullable | |
+| format | text | CC / LL / SAGE / GAGE (formats.abbreviation) |
 | win_rate | numeric, nullable | |
 | sample_size | int, nullable | needed to judge reliability of win_rate |
-| source | text | fabtcgmeta / fablazing / FABREC |
+| source | text | fabtcgmeta / fablazing |
 | fetched_at | timestamptz | |
 
 ### `staple_stats`
