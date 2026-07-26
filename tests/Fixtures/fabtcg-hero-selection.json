@@ -1,0 +1,85 @@
+{
+    "heroes": [
+        {
+            "id": 1001,
+            "slug": "dorinthea-ironsong",
+            "title": "Dorinthea",
+            "subtitle": "Ironsong",
+            "bio": "<p>Dorinthea Ironsong is a <em>Warrior</em> of&nbsp;Solana.</p>",
+            "difficulty": 2,
+            "class": ["warrior"],
+            "talent": [],
+            "playstyle": ["aggressive", "midrange"],
+            "format": {
+                "cc": {"status": "legal", "name": "Classic Constructed"},
+                "blitz": {"status": "legal", "name": "Blitz"},
+                "commoner": {"status": "not_legal", "name": "Commoner"},
+                "living-legend": {"status": "not_legal", "name": "Living Legend"},
+                "project-blue": {"status": "legal", "name": "Silver Age"},
+                "ultimate-pit-fight": {"status": "legal", "name": "Ultimate Pit Fight"}
+            }
+        },
+        {
+            "id": 1002,
+            "slug": "kano-dracai-of-aether",
+            "title": "Kano",
+            "subtitle": "Dracai of Aether",
+            "bio": "<p>Kano bends the elements of Aether to his will.</p>",
+            "difficulty": 3,
+            "class": ["wizard"],
+            "talent": ["elemental"],
+            "playstyle": ["combo"],
+            "format": {
+                "cc": {"status": "not_legal", "name": "Classic Constructed"},
+                "blitz": {"status": "legal", "name": "Blitz"},
+                "commoner": {"status": "not_legal", "name": "Commoner"},
+                "living-legend": {"status": "legal", "name": "Living Legend"},
+                "project-blue": {"status": "not_legal", "name": "Silver Age"},
+                "ultimate-pit-fight": {"status": "legal", "name": "Ultimate Pit Fight"}
+            }
+        },
+        {
+            "id": 1003,
+            "slug": "uzuri",
+            "title": "Uzuri",
+            "subtitle": "",
+            "bio": "<p>Uzuri stalks the Pits with cunning precision.</p>",
+            "difficulty": 2.5,
+            "class": ["ninja"],
+            "talent": [],
+            "playstyle": ["control"],
+            "format": {
+                "cc": {"status": "legal", "name": "Classic Constructed"}
+            }
+        },
+        {
+            "id": 1004,
+            "slug": "melody-sing-song",
+            "title": "Melody",
+            "subtitle": "Sing-Song",
+            "bio": "<p>Melody weaves song into the fabric of battle.</p>",
+            "difficulty": 1.5,
+            "class": ["bard"],
+            "talent": [],
+            "playstyle": ["support"],
+            "format": {
+                "cc": {"status": "legal", "name": "Classic Constructed"}
+            }
+        },
+        {
+            "id": 1005,
+            "slug": "vynnset-iron-maiden",
+            "title": "Vynnset",
+            "subtitle": "Iron Maiden",
+            "bio": "",
+            "difficulty": 3,
+            "class": ["runeblade"],
+            "talent": [],
+            "playstyle": [],
+            "format": {
+                "cc": {"status": "rotating", "name": "Classic Constructed"}
+            }
+        }
+    ],
+    "filters": {}
+}
