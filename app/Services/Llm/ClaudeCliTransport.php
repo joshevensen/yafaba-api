@@ -5,6 +5,11 @@ namespace App\Services\Llm;
 use Illuminate\Support\Facades\Process;
 use RuntimeException;
 
+/**
+ * Local/manual-only LLM transport: shells out to the `claude` CLI in
+ * headless JSON mode, validates the response against the caller's schema,
+ * and re-prompts on mismatch. Refuses to run in production.
+ */
 class ClaudeCliTransport implements LlmTransport
 {
     public function __construct(

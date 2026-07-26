@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+/**
+ * Immutable run state for one enrich:run invocation, serialized into the
+ * payload of every job it dispatches.
+ */
 final readonly class EnrichmentRunContext
 {
     /**

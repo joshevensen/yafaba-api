@@ -4,6 +4,9 @@ namespace App\Services\Llm;
 
 use InvalidArgumentException;
 
+/**
+ * Resolves the LlmTransport implementation for a --via value.
+ */
 class LlmTransportFactory
 {
     public function __construct(

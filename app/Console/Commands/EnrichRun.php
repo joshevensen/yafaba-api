@@ -18,6 +18,11 @@ use Throwable;
 
 #[Signature('enrich:run {--only= : Comma-separated subset of steps: kb,explainer,combo,synergy,validate,publish} {--fresh : Ignore idempotency guards and recompute everything} {--dry-run : Log planned writes without persisting or spending} {--card= : Enrich a single card end-to-end, inline} {--via=api : LLM transport: api|cli (cli is local-only)} {--triggered-by=cli : scheduled|manual|cli}')]
 #[Description('Dispatch the Enrichment pipeline: a chained sequence of queued jobs, with Bus::batch for the per-card fan-out steps.')]
+/**
+ * Entry point for the Enrichment pipeline. Consults PipelineRunGate/
+ * PipelineRunRecorder for the multi-card path, or runs a single card inline
+ * on the sync connection when --card is given.
+ */
 class EnrichRun extends Command
 {
     public function __construct(
