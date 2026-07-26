@@ -33,7 +33,7 @@ class DataSchemaMigrationsTest extends TestCase
             'precon_cards' => ['precon_id', 'card_id', 'quantity'],
             'rules_text_versions' => ['id', 'fetched_at', 'full_text', 'diff_from_previous'],
             'errata_bulletins' => ['id', 'bulletin_number', 'url', 'published_date', 'content', 'affected_card_ids', 'cached_at'],
-            'meta_snapshots' => ['id', 'hero_id', 'format', 'tier', 'win_rate', 'sample_size', 'source', 'fetched_at'],
+            'meta_snapshots' => ['id', 'hero_id', 'format', 'win_rate', 'sample_size', 'source', 'fetched_at'],
             'staple_stats' => ['id', 'hero_id', 'card_id', 'inclusion_rate', 'source', 'fetched_at'],
         ];
     }

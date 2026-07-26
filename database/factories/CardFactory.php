@@ -33,4 +33,11 @@ class CardFactory extends Factory
             'updated_at' => now(),
         ];
     }
+
+    public function hero(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'card_type_id' => CardType::firstOrCreate(['name' => 'hero'], ['display_order' => 1])->id,
+        ]);
+    }
 }

@@ -15,7 +15,6 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('hero_id')->constrained('cards');
             $table->string('format');
-            $table->string('tier')->nullable();
             $table->decimal('win_rate', 5, 4)->nullable();
             $table->integer('sample_size')->nullable();
             $table->string('source');
