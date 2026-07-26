@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['id', 'name', 'card_type_id', 'pitch_value', 'cost', 'power', 'defense', 'functional_text', 'hero_profile_id', 'age', 'source_id', 'source_hash', 'updated_at'])]
 class Card extends Model
@@ -56,5 +57,25 @@ class Card extends Model
     public function printings(): HasMany
     {
         return $this->hasMany(CardPrinting::class);
+    }
+
+    public function explainer(): HasOne
+    {
+        return $this->hasOne(CardExplainer::class, 'card_id');
+    }
+
+    public function comboPairs(): HasMany
+    {
+        return $this->hasMany(ComboPair::class, 'card_id_a');
+    }
+
+    public function comboPairsAsPartner(): HasMany
+    {
+        return $this->hasMany(ComboPair::class, 'card_id_b');
+    }
+
+    public function synergyTags(): BelongsToMany
+    {
+        return $this->belongsToMany(SynergyTag::class, 'card_synergy_tags', 'card_id', 'synergy_tag_id')->withPivot('status');
     }
 }
