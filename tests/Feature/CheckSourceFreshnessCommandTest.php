@@ -8,6 +8,7 @@ use App\Services\PipelineRunRecorder;
 use Illuminate\Console\Command;
 use Illuminate\Console\Scheduling\Schedule as ScheduleRunner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
@@ -225,5 +226,22 @@ class CheckSourceFreshnessCommandTest extends TestCase
 
         $this->assertNotNull($matching);
         $this->assertSame('0 9 * * *', $matching->expression);
+    }
+
+    public function test_all_configured_sources_map_to_registered_artisan_commands(): void
+    {
+        $sources = config('pipeline.sources');
+        $registered = array_keys(Artisan::all());
+
+        $this->assertCount(8, $sources, 'Expected exactly 8 tracked pipeline sources.');
+
+        foreach ($sources as $sourceKey => $sourceConfig) {
+            $this->assertArrayHasKey('command', $sourceConfig, "Source [{$sourceKey}] is missing a 'command' mapping.");
+            $this->assertContains(
+                $sourceConfig['command'],
+                $registered,
+                "Source [{$sourceKey}] maps to '{$sourceConfig['command']}', which is not a registered artisan command."
+            );
+        }
     }
 }
