@@ -39,7 +39,7 @@ B. Knowledge Base    chunk CR + errata + prior validated notes → embed (Voyage
                                                 │
 C. AI enrichment     explainers (RAG over KB) → combo tagging → synergy tagging   [status: draft]
                                                 │
-D. Self-validation   rules-grounding check + self-play → confidence/flags → human spot-check queue
+D. Self-validation   rules-grounding check + combo/synergy plausibility audit → confidence/flags → human spot-check queue
                                                 │
 E. Publish           promote validated rows → refresh live tables (transaction)
 ```
@@ -59,8 +59,8 @@ Each AI task is a **versioned prompt package** (Claude via the Laravel AI SDK) u
 | # | Task | Grounding inputs (RAG / context) | Structured output → table | Validated by |
 |---|---|---|---|---|
 | 1 | **Card explainer** *(hardest)* | card `functional_text` + its keywords' glossary text + top-k CR chunks (KB, `ground_truth` only) + any errata affecting the card | `explainer_text`, `cited_rules[]` → `card_explainers` (draft) | rules-grounding check (D) |
-| 2 | **Combo tagging** | card + candidate partners (class/talent filter + KB vector similarity) + prior **validated** combos | `[{card_id_b, description}]` → `combo_pairs` (draft) | self-play (D) |
-| 3 | **Synergy tagging** | card + `synergy_tags` vocabulary + prior validated tags | tag assignments (+ new-tag proposals) → `card_synergy_tags` / `synergy_tags` (draft) | self-play + similarity audit |
+| 2 | **Combo tagging** | card + candidate partners (class/talent filter + KB vector similarity) + prior **validated** combos | `[{card_id_b, description}]` → `combo_pairs` (draft) | similarity audit + human review (D) — self-play deferred, see below |
+| 3 | **Synergy tagging** | card + `synergy_tags` vocabulary + prior validated tags | tag assignments (+ new-tag proposals) → `card_synergy_tags` / `synergy_tags` (draft) | similarity audit + human review — self-play deferred, see below |
 | 4 | **Explainer grounding check** *(validation)* | explainer's `cited_rules[]` + current CR snapshot + card ability text | pass/flag + confidence | deterministic + topical LLM check |
 | 5 | **Hero-profile grouping confirm** | the 80–95% gray-band pairs from the deterministic similarity (see `schema.md`) | `hero_profile_grouping_status` | human / self-play |
 | 6 | **Learn authoring** *(related; feeds Read)* | CR chunks + validated explainers | How-to-Play tiers, Class Guides | human spot-check |
@@ -86,7 +86,8 @@ Notes for every task:
 Runs **before** the human spot-check, to make manual review tractable (flag suspects, don't review everything). Two failure modes, two checks:
 
 - **Explainer grounding (rules cross-check).** Deterministic first: every `cited_rules` entry must exist in the current CR snapshot and be topically consistent with the card's ability. Catches hallucinated/outdated citations. LLM only judges topical consistency. Nuance/quality still needs human sampling (higher rate here — it's the hardest step).
-- **Combo/synergy (self-play).** Two full-information AI agents play a tagged-combo deck vs. a baseline deck; compare win rates → `combo_pairs.self_play_win_rate_delta`. A tag with no measurable lift is **flagged** for review (catches "plausible but wrong"). Missed combos (false negatives) rely on a vector-similarity audit + human review, not self-play.
+- **Combo/synergy (self-play) — deferred to Play.** The original design was two full-information AI agents playing a tagged-combo deck vs. a baseline deck, comparing win rates → `combo_pairs.self_play_win_rate_delta`. That requires an actual game engine, which is Play's scope (forked Talishar engine) — and Play is the *last* phase in the sequence (Data → Enrichment → Curation → Read → Build → **Play**), so Enrichment can't depend on it without breaking phase ordering. Real self-play is deferred until Play's engine exists (a follow-on issue once Play is planned).
+- **Combo/synergy — interim validation.** Until self-play ships: a vector-similarity plausibility audit (does the proposed combo/tag land near what the KB/vocabulary would predict) plus mandatory human-review flagging on *every* `combo_pairs`/`card_synergy_tags` row, since there's no win-rate signal to pre-filter which ones need a human look. Higher human-review rate than the original design, accepted as a tradeoff rather than a silently-dropped check. Missed combos (false negatives) still rely on the same similarity audit + human review either way, not self-play.
 - **Output:** a confidence/flag per card/tag that prioritizes the human spot-check.
 - **Trust promotion:** `draft → validated` on pass. **Only `validated` content feeds future enrichment prompts** (via `kb_documents.trust_status`) — this is what stops a set-1 error from being treated as fact by set 5.
 
@@ -104,3 +105,4 @@ Runs **before** the human spot-check, to make manual review tractable (flag susp
 - **Model per task** — confirm which Claude tier per AI task (explainers vs. tagging) on cost/quality.
 - **Prompt/skill home** — confirm `skills/enrichment/*` as the layout for the versioned prompt packages.
 - **Learn authoring scope** — How-to-Play / Class Guides are authored here but consumed by Read; decide whether they're in the Phase-1 pipeline or a follow-on pass.
+- **Combo/synergy self-play** — deferred until Play's game engine exists (see Self-validation above); needs its own issue once Play is planned.
