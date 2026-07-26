@@ -2,13 +2,18 @@
 
 namespace App\Models;
 
+use Database\Factories\CardExplainerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['card_id', 'explainer_text', 'cited_rules', 'status', 'generated_at', 'validated_at'])]
 class CardExplainer extends Model
 {
+    /** @use HasFactory<CardExplainerFactory> */
+    use HasFactory;
+
     protected $table = 'card_explainers';
 
     protected $primaryKey = 'card_id';

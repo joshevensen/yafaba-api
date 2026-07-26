@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use Database\Factories\KbDocumentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable(['id', 'source_type', 'source_ref', 'content', 'embedding', 'embedding_model', 'trust_status', 'version', 'effective_date', 'created_at'])]
 class KbDocument extends Model
 {
-    use HasUuids;
+    /** @use HasFactory<KbDocumentFactory> */
+    use HasFactory, HasUuids;
 
     protected $table = 'kb_documents';
 

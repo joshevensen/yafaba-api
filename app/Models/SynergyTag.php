@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use Database\Factories\SynergyTagFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable(['id', 'name', 'description'])]
 class SynergyTag extends Model
 {
-    use HasUuids;
+    /** @use HasFactory<SynergyTagFactory> */
+    use HasFactory, HasUuids;
 
     protected $table = 'synergy_tags';
 
