@@ -28,9 +28,10 @@ class FinalizeEnrichmentRun extends EnrichmentJob
             return;
         }
 
-        $recorder->finish($run, PipelineRun::STATUS_SUCCESS, [
-            'dry_run' => $this->context->isDryRun(),
-        ]);
+        $recorder->finish($run, PipelineRun::STATUS_SUCCESS, array_merge(
+            $this->context->plannedCounts,
+            ['dry_run' => $this->context->isDryRun()],
+        ));
     }
 
     protected function stepKey(): string

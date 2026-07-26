@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Services\Llm\LlmTransport;
+use App\Services\Llm\LlmTransportFactory;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(LlmTransport::class, fn ($app) => $app->make(LlmTransportFactory::class)->make((string) config('enrichment.transport')));
     }
 
     /**
@@ -19,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        RateLimiter::for('enrichment-llm', fn () => Limit::perMinute((int) config('enrichment.rate_limits.llm.allow')));
+        RateLimiter::for('enrichment-embedding', fn () => Limit::perMinute((int) config('enrichment.rate_limits.embedding.allow')));
     }
 }

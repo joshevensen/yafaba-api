@@ -6,6 +6,7 @@ final readonly class EnrichmentRunContext
 {
     /**
      * @param  array<int, string>  $steps
+     * @param  array<string, int>  $plannedCounts
      */
     public function __construct(
         public ?string $pipelineRunId,
@@ -16,6 +17,7 @@ final readonly class EnrichmentRunContext
         public string $via,
         public string $triggeredBy,
         public string $promptVersion,
+        public array $plannedCounts = [],
     ) {}
 
     public function includes(string $step): bool
