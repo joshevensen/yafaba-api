@@ -97,3 +97,6 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 
 ## Open questions
 - **cardvault fallback.** Define the degraded path if the unofficial API changes/blocks (fab-cube imagery? last cache?).
+
+### Run tracking & freshness checks
+`data:check-sources` runs daily and probes each source for a cheap change fingerprint (GitHub commit SHA for fab-cube; ETag/Last-Modified/content hash elsewhere), recorded in `source_sync_state`. An ingest command runs only when its source's fingerprint changed since the last successful pull. Every Data/Enrichment invocation is logged to `pipeline_runs` (phase, command, status, triggered_by, counts), which also backs the Enrichment cooldown gate (`PipelineRunGate::enrichmentShouldRun()`) and the per-phase concurrency lock. Both tables are ops infrastructure and are intentionally absent from [`schema.md`](./schema.md).
