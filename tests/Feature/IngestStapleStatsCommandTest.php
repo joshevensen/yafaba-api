@@ -164,7 +164,7 @@ class IngestStapleStatsCommandTest extends TestCase
 
         Artisan::call('data:ingest-staples');
 
-        $this->assertSame(0, StapleStat::whereNull('inclusion_rate')->count());
+        $this->assertSame(0, StapleStat::count());
         Log::shouldHaveReceived('warning')
             ->withArgs(fn ($message) => str_contains($message, 'Skipping malformed fabrec card row'))
             ->atLeast()->once();
@@ -202,6 +202,15 @@ class IngestStapleStatsCommandTest extends TestCase
 
         $this->assertNotSame(Command::SUCCESS, $exitCode);
         $this->assertSame(0, StapleStat::count());
+    }
+
+    public function test_command_fails_when_no_hero_card_type_exists(): void
+    {
+        $exitCode = Artisan::call('data:ingest-staples');
+
+        $this->assertNotSame(Command::SUCCESS, $exitCode);
+        $this->assertSame(0, StapleStat::count());
+        Http::assertNothingSent();
     }
 
     public function test_rerun_overwrites_existing_rows_instead_of_duplicating(): void
