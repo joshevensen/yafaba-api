@@ -13,7 +13,7 @@ Card-level AI processing on top of the stored data. Turns raw source data (inges
 Runs **manually and locally** for testing, and **on a schedule with queues** in production. Same code path both ways — the schedule just invokes the same command.
 
 - **Entry point:** an Artisan command, e.g. `php artisan enrich:run`, that **dispatches queued jobs** (it does not do the work inline). Testing flags:
-  - `--only=cards,pricing` — run a subset of steps
+  - `--only=kb,explainer,combo,synergy,validate,publish` — run a subset of steps (e.g. skip `combo`/`synergy` when only explainers need a refresh)
   - `--fresh` — ignore `source_hash`/caches and recompute
   - `--dry-run` — fetch + log planned writes without persisting
   - `--card=<id>` — enrich a single card end-to-end (fast local loop)
