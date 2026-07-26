@@ -83,6 +83,20 @@ class PipelineRunGateTest extends TestCase
         $this->assertSame(PipelineGateDecision::REASON_ALREADY_RUNNING, $decision->reason);
     }
 
+    public function test_force_allows_a_run_when_nothing_is_already_running(): void
+    {
+        config(['enrichment.min_run_interval_hours' => 24]);
+
+        PipelineRun::factory()->enrichment()->create([
+            'finished_at' => now()->subMinutes(10),
+        ]);
+
+        $decision = $this->gate()->enrichmentShouldRun(force: true);
+
+        $this->assertTrue($decision->allowed);
+        $this->assertSame(PipelineGateDecision::REASON_FORCED, $decision->reason);
+    }
+
     public function test_only_ai_relevant_source_changes_allow_a_run(): void
     {
         config(['enrichment.min_run_interval_hours' => 24]);
