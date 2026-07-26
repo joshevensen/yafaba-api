@@ -20,7 +20,7 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 | [fabtcg.com errata bulletins](https://fabtcg.com/rules-and-policy-center/errata-bulletins/) | Functional errata | Scrape index + articles | `errata_bulletins`, `kb_documents` | No API; scrape once, never re-scrape |
 | fabtcgmeta.com, fablazing.com | Tier lists / win rates | Scrape | `meta_snapshots` | **ToS check per source** before caching |
 | [FABREC (fabrec.gg)](https://fabrec.gg/) / Spellvoid | Staple / inclusion rates | Scrape | `staple_stats` | No public API; no ToS/robots restriction found |
-| fabtcg.com/hero-selection *(candidate)* | Official playstyle/archetype tags, format flags | Scrape | `hero_profiles.playstyle_tags`, `card_legality` | Confirm it exposes structured data |
+| [fabtcg.com/hero-selection](https://fabtcg.com/hero-selection/) | Official playstyle/archetype tags, lore, format flags | JSON API | `hero_profiles.playstyle_tags`, `heroes.lore`, `card_legality` | Format keys only partially map (blitz/commoner/UPF unmapped) |
 
 ---
 
@@ -66,12 +66,12 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 - **Fetch:** no public API — scrape per-hero pages, one per hero card already in `cards`. **ToS check performed:** fabrec.gg has no `robots.txt` (404) and no dedicated Terms of Service page found; its `/privacy` page is a Mediavine ad-cookie policy with no scraping/reuse restriction. No explicit prohibition on scraping or caching was found anywhere on the site. Spellvoid.com (a companion site fabrec.gg links to) exposes no separate inclusion-rate feature, so it is not scraped.
 - **Populates:** `staple_stats` (hero card, card, inclusion_rate, source, fetched_at).
 
-## Hero metadata — fabtcg.com/hero-selection *(candidate)*
-- **What:** LSS's official hero-selection tool — likely exposes per-hero **playstyle/archetype tags** and format flags that Curation currently infers by hand.
-- **Why it matters:** if it publishes structured tags, `hero_profiles.playstyle_tags` becomes *ingested fact* instead of a Curation guess — moving work from Curation into Data. This is the main "pull more into Data" opportunity.
-- **Fetch:** scrape; **confirm the data is structured/parseable** (may be JS-rendered) before committing.
-- **Populates:** `hero_profiles.playstyle_tags`; possibly `card_legality` / lore.
-- **Status:** candidate — investigate feasibility + ToS.
+## Hero metadata — fabtcg.com/hero-selection
+- **What:** LSS's official hero-selection tool. The page itself (`https://fabtcg.com/hero-selection/`) is JS-rendered, but it calls a public, unauthenticated JSON API — `https://fabtcg.com/api/fab/v2/heroes/?lang=en` — that returns all heroes in a single unpaginated GET: structured `playstyle` tags, an HTML `bio`, and per-format legality flags. `robots.txt` is fully permissive.
+- **Fetch:** direct JSON fetch of the API endpoint (`data:ingest-hero-selection`); no scraping/HTML parsing required.
+- **Populates:** `hero_profiles.playstyle_tags` (ingested fact, replacing the Curation-phase guess where this source covers a hero); `heroes.lore` (from `bio`, HTML stripped); `card_legality` for the three fabtcg format keys that map onto our `formats` table (`cc → CC`, `living-legend → LL`, `project-blue → SAGE`). fabtcg's other format keys (`blitz`, `commoner`, `ultimate-pit-fight`) have no corresponding `formats` row and are flagged, not written; `GAGE` (Golden Age) is not exposed by fabtcg at all.
+- **Ordering:** runs *after* `data:ingest-cards`, as an official-source overlay — it overwrites whatever `IngestFabCubeCards` wrote to `card_legality` for the three mapped formats (official source wins, last-write-wins is intentional) but never deletes rows. **Ordering hazard:** the reverse isn't true — `IngestFabCubeCards::syncLegality()` *deletes* a `card_legality` row when the fab-cube record has no explicit legal/banned/suspended flag, so re-running `data:ingest-cards` **after** this command can silently remove a `not_legal` (or `legal`) row this command just wrote, with no warning. Until the two are reconciled, re-run `data:ingest-hero-selection` last whenever both are run in the same pass.
+- **Status:** implemented.
 
 ---
 
@@ -90,9 +90,10 @@ Every inbound data source: where it comes from, how it's fetched, its caveats, a
 | CR rules text | new snapshot per fetch | every run; versioned, diffed |
 | errata bulletins | `cached_at` (never re-scrape) | index re-checked for new only |
 | meta / staples | `fetched_at` | scheduled refresh; overwrite latest |
+| hero selection | n/a (direct field write + (card_id, format_id) upsert) | every run; overwrite latest |
 
 ## Sourced vs. derived (boundary with Curation)
-**Data ingests every fact a source provides; [Curation](../curation/curation.md) derives/authors what none does.** Ingested here: rosters, ability text, talents, legality, rarity, precon membership, win-rate/tier, staples, and — candidate — official playstyle/lore tags. Left to Curation: complexity scoring, computed pitch lean, set-concentration, mechanical-theme synthesis, guides, and quiz design.
+**Data ingests every fact a source provides; [Curation](../curation/curation.md) derives/authors what none does.** Ingested here: rosters, ability text, talents, legality, rarity, precon membership, win-rate/tier, staples, and official hero playstyle/lore tags. Left to Curation: complexity scoring, computed pitch lean, set-concentration, mechanical-theme synthesis, guides, and quiz design.
 
 ## Open questions
 - **cardvault fallback.** Define the degraded path if the unofficial API changes/blocks (fab-cube imagery? last cache?).
