@@ -12,19 +12,21 @@ Card-level AI processing on top of the stored data. Turns raw source data (inges
 
 Runs **manually and locally** for testing, and **on a schedule with queues** in production. Same code path both ways — the schedule just invokes the same command.
 
-- **Entry point:** an Artisan command, e.g. `php artisan enrich:run`, that **dispatches queued jobs** (it does not do the work inline). Testing flags:
-  - `--only=cards,pricing` — run a subset of steps
-  - `--fresh` — ignore `source_hash`/caches and recompute
-  - `--dry-run` — fetch + log planned writes without persisting
-  - `--card=<id>` — enrich a single card end-to-end (fast local loop)
-- **Production schedule:** registered in the console schedule — a **set-release cadence** plus a **periodic full re-run** (re-run against the *whole* pool, not just new cards, to catch new-old synergies).
+- **Entry point:** `php artisan enrich:run`, which **dispatches queued jobs** (it does not do the work inline). Flags:
+  - `--only=kb,explainer,combo,synergy,validate,publish` — run a subset of steps
+  - `--fresh` — ignore idempotency guards and recompute everything (manual/CLI-only; never used by the schedule — see below)
+  - `--dry-run` — log planned writes without persisting or spending
+  - `--card=<id>` — enrich a single card end-to-end, inline (fast local loop)
+  - `--via=api|cli` — LLM transport; `cli` shells out to the `claude` CLI for local/manual runs and is refused in production
+  - `--triggered-by=scheduled|manual|cli` — who triggered the run, for `PipelineRun` bookkeeping
+- **Production schedule:** one entry in the console schedule — the set-release cadence (weekly). New cards are already picked up by the normal run's per-card idempotency guard, so no separate scheduled full re-run exists; `--fresh` stays a manual flag for the narrower case of re-scanning existing cards' combo/synergy candidate pools after a set release.
 - **Queues (required):** each step is a queued job.
-  - **Chain** the ordered phases (ingest → KB → AI → validate → publish).
-  - **Batch** (`Bus::batch`) the fan-out steps — per-card explainer/tagging across thousands of cards — with a concurrency cap and a `then`/`catch`/`finally` to gate the next phase.
+  - **Chain** the ordered phases (KB → AI → validate → publish).
+  - **Batch** (`Bus::batch`) the fan-out steps — per-card explainer/tagging across thousands of cards — nested inside the chain, gating the next phase on batch completion.
   - **Why:** long LLM/HTTP work off the request cycle, automatic retries/backoff, throttling to respect Anthropic + Voyage rate limits, and parallelism with a ceiling.
-  - **Driver:** Redis recommended for batching/throughput in prod (database queue is fine locally). Confirm infra.
-  - **Rate limiting:** `Redis::throttle` / `RateLimited` middleware on the LLM + embedding jobs.
-  - **Idempotency:** every job checks `source_hash` / row `status` and skips unchanged work, so partial re-runs are safe.
+  - **Driver:** `database` locally (default), `QUEUE_CONNECTION=redis` in production.
+  - **Rate limiting:** `RateLimited` middleware, with named limiters, on the LLM + embedding jobs.
+  - **Idempotency:** every job checks row `status`/timestamps and skips unchanged work, so partial re-runs are safe.
   - **Failure:** per-job `tries`/`backoff`, `failed_jobs` dead-letter; **publish only runs after the validation gate passes**.
 
 ---
@@ -99,7 +101,6 @@ Runs **before** the human spot-check, to make manual review tractable (flag susp
 ---
 
 ## Open questions
-- **Queue driver** — Redis vs. database in prod (infra decision).
 - **Admin trigger** — is a manual production trigger/monitor endpoint needed (Read phase), or is the scheduled command + logs enough? (Cross-refs the Read README's open question.)
 - **Model per task** — confirm which Claude tier per AI task (explainers vs. tagging) on cost/quality.
 - **Prompt/skill home** — confirm `skills/enrichment/*` as the layout for the versioned prompt packages.

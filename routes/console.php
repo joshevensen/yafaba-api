@@ -9,3 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('data:check-sources --triggered-by=scheduled')->dailyAt('09:00')->withoutOverlapping();
+
+Schedule::command('enrich:run --triggered-by=scheduled')->weeklyOn(1, '10:00')->withoutOverlapping();
