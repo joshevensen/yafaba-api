@@ -32,6 +32,18 @@ return [
     /** Intended worker count for the enrichment queue; Laravel batches have no native concurrency cap. */
     'batch_concurrency' => (int) env('ENRICHMENT_BATCH_CONCURRENCY', 5),
 
+    'embedding' => [
+        'model' => env('ENRICHMENT_EMBEDDING_MODEL', 'voyage-3.5'),
+        'dimensions' => 1024,
+        'batch_size' => (int) env('ENRICHMENT_EMBEDDING_BATCH_SIZE', 64),
+        'min_chunk_chars' => (int) env('ENRICHMENT_MIN_CHUNK_CHARS', 200),
+        'max_chunk_chars' => (int) env('ENRICHMENT_MAX_CHUNK_CHARS', 4000),
+        /** Distinct from the top-level `queue`: BuildKnowledgeBase blocks on this queue's jobs, so they can't share a queue with it. */
+        'queue' => env('ENRICHMENT_EMBEDDING_QUEUE', 'enrichment-embedding'),
+        /** How long BuildKnowledgeBase will block waiting for its embedding batch before giving up and logging a timeout (superseded rows are only deleted on confirmed success, so a timeout never loses data). */
+        'max_wait_seconds' => (int) env('ENRICHMENT_EMBEDDING_MAX_WAIT_SECONDS', 1500),
+    ],
+
     'cli' => [
         'binary' => env('CLAUDE_CLI_BINARY', 'claude'),
         'timeout' => (int) env('CLAUDE_CLI_TIMEOUT', 180),

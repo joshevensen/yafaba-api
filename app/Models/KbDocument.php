@@ -20,6 +20,20 @@ class KbDocument extends Model
 
     public const UPDATED_AT = null;
 
+    public const SOURCE_CR_RULES = 'cr_rules';
+
+    public const SOURCE_ERRATA = 'errata';
+
+    public const SOURCE_EXPLAINER = 'explainer';
+
+    public const SOURCE_COMBO = 'combo';
+
+    public const SOURCE_SYNERGY = 'synergy';
+
+    public const TRUST_GROUND_TRUTH = 'ground_truth';
+
+    public const TRUST_VALIDATED = 'validated';
+
     /**
      * Get the attributes that should be cast.
      *

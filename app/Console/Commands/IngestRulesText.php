@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\RulesTextVersion;
+use App\Services\Enrichment\KbChunker;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -14,6 +15,11 @@ use Throwable;
 class IngestRulesText extends Command
 {
     public const SOURCE_URL = 'https://rules.fabtcg.com/txt/latest/en-fab-cr.txt';
+
+    public function __construct(private readonly KbChunker $chunker)
+    {
+        parent::__construct();
+    }
 
     /**
      * Execute the console command.
@@ -35,12 +41,12 @@ class IngestRulesText extends Command
         }
 
         $previous = RulesTextVersion::query()->orderByDesc('fetched_at')->orderByDesc('id')->first();
-        $currentSections = $this->parseSections($body);
+        $currentSections = $this->chunker->parseSections($body);
 
         if ($previous === null) {
             $diff = null;
         } else {
-            $previousSections = $this->parseSections($previous->full_text);
+            $previousSections = $this->chunker->parseSections($previous->full_text);
             $diff = json_encode($this->diffSections($previousSections, $currentSections), JSON_THROW_ON_ERROR);
         }
 
@@ -73,36 +79,6 @@ class IngestRulesText extends Command
         $url = $this->option('url') ?: self::SOURCE_URL;
 
         return Http::timeout(180)->get($url)->throw()->body();
-    }
-
-    /**
-     * Parse rules text into an ordered map of section-key => section-body.
-     *
-     * A line matching a numbered rule/glossary pattern (e.g. `1.0.1a`,
-     * `1.-1.293`) opens a new section; every other line — chapter headings,
-     * prose, examples, blank lines — is appended to the currently-open
-     * section's body. Lines before the first section accumulate under the
-     * reserved `preamble` key. This map is used only to compute the diff
-     * against the previous snapshot; `full_text` always stores the raw body.
-     *
-     * @return array<string, string>
-     */
-    private function parseSections(string $text): array
-    {
-        $sections = [];
-        $currentKey = 'preamble';
-
-        foreach (preg_split('/\R/', $text) as $line) {
-            if (preg_match('/^(\d+(?:\.-?\d+){1,3}[a-z]?)\s/', $line, $matches) === 1) {
-                $currentKey = $matches[1];
-            }
-
-            $sections[$currentKey] = isset($sections[$currentKey])
-                ? $sections[$currentKey]."\n".$line
-                : $line;
-        }
-
-        return $sections;
     }
 
     /**
