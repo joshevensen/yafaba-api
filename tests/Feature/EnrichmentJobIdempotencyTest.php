@@ -13,10 +13,12 @@ use App\Models\ErrataBulletin;
 use App\Models\KbDocument;
 use App\Models\RulesTextVersion;
 use App\Models\SynergyTag;
+use App\Services\Enrichment\KbChunker;
 use App\Services\EnrichmentRunContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -179,37 +181,52 @@ class EnrichmentJobIdempotencyTest extends TestCase
 
     public function test_build_knowledge_base_skips_when_up_to_date(): void
     {
+        Http::preventStrayRequests();
+
         RulesTextVersion::factory()->create(['fetched_at' => now()->subDay()]);
         ErrataBulletin::factory()->create(['cached_at' => now()->subDay()]);
         KbDocument::factory()->create(['created_at' => now()]);
 
-        (new BuildKnowledgeBase($this->context()))->handle();
+        (new BuildKnowledgeBase($this->context()))->handle(app(KbChunker::class));
 
         $this->assertCount(1, $this->loggedWithMessage('enrichment.skipped'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.stub'));
+        Http::assertNothingSent();
     }
 
     public function test_build_knowledge_base_does_not_skip_when_fresh(): void
     {
-        RulesTextVersion::factory()->create(['fetched_at' => now()->subDay()]);
+        Http::fake([
+            '*' => function ($request) {
+                $input = $request->data()['input'];
+
+                return Http::response(['data' => array_map(
+                    fn (int $index): array => ['index' => $index, 'embedding' => array_fill(0, 1024, 0.1)],
+                    array_keys($input),
+                )]);
+            },
+        ]);
+
+        RulesTextVersion::factory()->create(['fetched_at' => now()->subDay(), 'full_text' => "1.0 Rule one is a rule about something long enough to survive chunk merging thresholds in tests.\n2.0 Rule two is another rule long enough to survive merging thresholds as well, for good measure."]);
         ErrataBulletin::factory()->create(['cached_at' => now()->subDay()]);
         KbDocument::factory()->create(['created_at' => now()]);
 
-        (new BuildKnowledgeBase($this->context(['fresh' => true])))->handle();
+        (new BuildKnowledgeBase($this->context(['fresh' => true])))->handle(app(KbChunker::class));
 
-        $this->assertCount(1, $this->loggedWithMessage('enrichment.stub'));
         $this->assertCount(0, $this->loggedWithMessage('enrichment.skipped'));
+        $this->assertGreaterThan(0, KbDocument::where('embedding_model', config('enrichment.embedding.model'))->count());
     }
 
     public function test_build_knowledge_base_respects_dry_run(): void
     {
+        Http::preventStrayRequests();
+
         $countBefore = KbDocument::count();
 
-        (new BuildKnowledgeBase($this->context(['dryRun' => true])))->handle();
+        (new BuildKnowledgeBase($this->context(['dryRun' => true])))->handle(app(KbChunker::class));
 
         $this->assertCount(1, $this->loggedWithMessage('enrichment.dry_run'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.stub'));
         $this->assertSame($countBefore, KbDocument::count());
+        Http::assertNothingSent();
     }
 
     public function test_tries_and_backoff_come_from_config(): void

@@ -32,6 +32,14 @@ return [
     /** Intended worker count for the enrichment queue; Laravel batches have no native concurrency cap. */
     'batch_concurrency' => (int) env('ENRICHMENT_BATCH_CONCURRENCY', 5),
 
+    'embedding' => [
+        'model' => env('ENRICHMENT_EMBEDDING_MODEL', 'voyage-3.5'),
+        'dimensions' => 1024,
+        'batch_size' => (int) env('ENRICHMENT_EMBEDDING_BATCH_SIZE', 64),
+        'min_chunk_chars' => (int) env('ENRICHMENT_MIN_CHUNK_CHARS', 200),
+        'max_chunk_chars' => (int) env('ENRICHMENT_MAX_CHUNK_CHARS', 4000),
+    ],
+
     'cli' => [
         'binary' => env('CLAUDE_CLI_BINARY', 'claude'),
         'timeout' => (int) env('CLAUDE_CLI_TIMEOUT', 180),

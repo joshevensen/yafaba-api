@@ -40,4 +40,9 @@ return [
         'api_url' => env('GITHUB_API_URL', 'https://api.github.com'),
     ],
 
+    'voyageai' => [
+        'key' => env('VOYAGE_API_KEY'),
+        'api_url' => env('VOYAGE_API_URL', 'https://api.voyageai.com/v1'),
+    ],
+
 ];
