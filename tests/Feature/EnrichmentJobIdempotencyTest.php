@@ -16,6 +16,8 @@ use App\Models\KbDocument;
 use App\Models\RulesTextVersion;
 use App\Models\SynergyTag;
 use App\Services\Enrichment\CardExplainerPromptBuilder;
+use App\Services\Enrichment\ComboCandidateRetriever;
+use App\Services\Enrichment\ComboTaggingPromptBuilder;
 use App\Services\Enrichment\KbChunker;
 use App\Services\Enrichment\KbRetriever;
 use App\Services\EnrichmentRunContext;
@@ -79,6 +81,11 @@ class EnrichmentJobIdempotencyTest extends TestCase
         $job->handle(app(KbRetriever::class), app(CardExplainerPromptBuilder::class), app(LlmTransportFactory::class));
     }
 
+    private function handleComboJob(TagCardCombos $job): void
+    {
+        $job->handle(app(ComboCandidateRetriever::class), app(KbRetriever::class), app(ComboTaggingPromptBuilder::class), app(LlmTransportFactory::class));
+    }
+
     private function bindFakeAnthropicClient(): void
     {
         $body = [
@@ -134,24 +141,61 @@ class EnrichmentJobIdempotencyTest extends TestCase
 
     public function test_tag_card_combos_skips_when_up_to_date(): void
     {
-        $card = Card::factory()->create();
-        ComboPair::factory()->create(['card_id_a' => $card->id]);
+        $card = Card::factory()->create(['source_hash' => 'hash-1', 'updated_at' => now()->subDay()]);
+        ComboPair::factory()->create([
+            'card_id_a' => $card->id,
+            'source_hash' => 'hash-1',
+            'prompt_version' => 'v0',
+            'generated_at' => now(),
+        ]);
 
-        (new TagCardCombos($this->context(['cardId' => $card->id]), $card->id))->handle();
+        $this->handleComboJob(new TagCardCombos($this->context(['cardId' => $card->id]), $card->id));
 
         $this->assertCount(1, $this->loggedWithMessage('enrichment.skipped'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.stub'));
+        $this->assertCount(0, $this->loggedWithMessage('enrichment.combos_tagged'));
     }
 
     public function test_tag_card_combos_does_not_skip_when_fresh(): void
     {
-        $card = Card::factory()->create();
-        ComboPair::factory()->create(['card_id_a' => $card->id]);
+        $card = Card::factory()->create(['source_hash' => 'hash-1', 'updated_at' => now()->subDay()]);
+        ComboPair::factory()->create([
+            'card_id_a' => $card->id,
+            'source_hash' => 'hash-1',
+            'prompt_version' => 'v0',
+            'generated_at' => now(),
+        ]);
 
-        (new TagCardCombos($this->context(['cardId' => $card->id, 'fresh' => true]), $card->id))->handle();
+        // No class/talent is attached to the card, so the real implementation
+        // will find no combo candidates and hit the no_candidates skip path
+        // before ever calling the LLM or Voyage - no HTTP faking required.
+        // What we're proving here is that isUpToDate() was bypassed because
+        // of `fresh`, not that a combo was actually written.
+        $this->handleComboJob(new TagCardCombos($this->context(['cardId' => $card->id, 'fresh' => true]), $card->id));
 
-        $this->assertCount(1, $this->loggedWithMessage('enrichment.stub'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.skipped'));
+        $skipped = $this->loggedWithMessage('enrichment.skipped');
+        $this->assertCount(1, $skipped);
+        $this->assertSame('no_candidates', $skipped[0]['context']['reason']);
+    }
+
+    public function test_tag_card_combos_does_not_skip_when_card_source_hash_changed(): void
+    {
+        $card = Card::factory()->create(['source_hash' => 'hash-2', 'updated_at' => now()->subDay()]);
+        ComboPair::factory()->create([
+            'card_id_a' => $card->id,
+            'source_hash' => 'hash-1',
+            'prompt_version' => 'v0',
+            'generated_at' => now(),
+        ]);
+
+        // No class/talent is attached to the card, so the real implementation
+        // will find no combo candidates and hit the no_candidates skip path.
+        // This proves isUpToDate() returned false (source_hash mismatch)
+        // rather than short-circuiting on the up_to_date reason.
+        $this->handleComboJob(new TagCardCombos($this->context(['cardId' => $card->id]), $card->id));
+
+        $skipped = $this->loggedWithMessage('enrichment.skipped');
+        $this->assertCount(1, $skipped);
+        $this->assertSame('no_candidates', $skipped[0]['context']['reason']);
     }
 
     public function test_tag_card_combos_respects_dry_run(): void
@@ -160,10 +204,10 @@ class EnrichmentJobIdempotencyTest extends TestCase
 
         $countBefore = ComboPair::count();
 
-        (new TagCardCombos($this->context(['cardId' => $card->id, 'dryRun' => true]), $card->id))->handle();
+        $this->handleComboJob(new TagCardCombos($this->context(['cardId' => $card->id, 'dryRun' => true]), $card->id));
 
         $this->assertCount(1, $this->loggedWithMessage('enrichment.dry_run'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.stub'));
+        $this->assertCount(0, $this->loggedWithMessage('enrichment.combos_tagged'));
         $this->assertSame($countBefore, ComboPair::count());
     }
 

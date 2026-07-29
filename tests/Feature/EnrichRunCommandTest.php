@@ -273,17 +273,17 @@ class EnrichRunCommandTest extends TestCase
 
         $card = Card::factory()->create();
 
-        // Uses the combo step (still a stub) rather than explainer: this
+        // Uses the synergy step (still a stub) rather than explainer: this
         // test exercises the generic --card inline-run plumbing, not
         // GenerateCardExplainer's own behavior (covered by
-        // GenerateCardExplainerTest), and combo needs no LLM/HTTP faking.
-        $exitCode = $this->artisan('enrich:run', ['--card' => $card->id, '--only' => 'combo'])->run();
+        // GenerateCardExplainerTest), and synergy needs no LLM/HTTP faking.
+        $exitCode = $this->artisan('enrich:run', ['--card' => $card->id, '--only' => 'synergy'])->run();
 
         $this->assertSame(Command::SUCCESS, $exitCode);
         $this->assertSame(0, PipelineRun::count());
         $this->assertSame(0, DB::table('job_batches')->count());
 
-        Log::shouldHaveReceived('info')->withArgs(fn ($message, $context) => $message === 'enrichment.stub' && $context['step'] === 'combo' && $context['card_id'] === $card->id)->atLeast()->once();
+        Log::shouldHaveReceived('info')->withArgs(fn ($message, $context) => $message === 'enrichment.stub' && $context['step'] === 'synergy' && $context['card_id'] === $card->id)->atLeast()->once();
     }
 
     public function test_card_mode_with_unknown_card_fails(): void

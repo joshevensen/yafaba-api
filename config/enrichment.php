@@ -36,6 +36,7 @@ return [
         /** Fallback model id for any LlmTransport::complete() call that doesn't specify one. */
         'default' => env('ENRICHMENT_MODEL_DEFAULT', 'claude-sonnet-5'),
         'card_explainer' => env('ENRICHMENT_MODEL_CARD_EXPLAINER', 'claude-sonnet-5'),
+        'combo_tagging' => env('ENRICHMENT_MODEL_COMBO_TAGGING', 'claude-haiku-4-5-20251001'),
     ],
 
     'llm' => [
@@ -49,6 +50,9 @@ return [
 
     'retrieval' => [
         'card_explainer_top_k' => (int) env('ENRICHMENT_RETRIEVAL_TOP_K', 8),
+        'combo_candidate_top_k' => (int) env('ENRICHMENT_RETRIEVAL_COMBO_CANDIDATE_TOP_K', 8),
+        'combo_candidate_pool_limit' => (int) env('ENRICHMENT_RETRIEVAL_COMBO_POOL_LIMIT', 50),
+        'combo_validated_examples_top_k' => (int) env('ENRICHMENT_RETRIEVAL_COMBO_EXAMPLES_TOP_K', 5),
     ],
 
     'embedding' => [
