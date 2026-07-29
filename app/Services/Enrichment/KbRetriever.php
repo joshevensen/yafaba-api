@@ -8,80 +8,57 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Top-k vector retrieval over kb_documents, restricted to ground_truth-trust
- * rows (rules/errata content only — never prior AI output). On pgsql this
- * ranks with a native `<=>` cosine-distance ORDER BY; on any other driver
- * (sqlite in tests, where the embedding column is plain text) it fetches the
- * candidate rows and ranks by cosine similarity computed in PHP, mirroring
- * the same driver conditional already used by the kb_documents migration.
+ * Top-k vector retrieval over kb_documents. Defaults to ground_truth-trust
+ * rows (rules/errata content only — never prior AI output) with no
+ * source_type filter, for backward compatibility with existing callers, but
+ * accepts any trust_status/source_type combination (e.g. validated combo or
+ * synergy notes). On pgsql this ranks with a native `<=>` cosine-distance
+ * ORDER BY; on any other driver (sqlite in tests, where the embedding column
+ * is plain text) it fetches the candidate rows and ranks by cosine
+ * similarity computed in PHP, mirroring the same driver conditional already
+ * used by the kb_documents migration.
  */
 class KbRetriever
 {
-    public function __construct(private readonly VoyageEmbeddingClient $client) {}
+    public function __construct(private readonly VoyageEmbeddingClient $client, private readonly VectorSimilarity $similarity) {}
 
     /**
      * @return Collection<int, KbDocument>
      */
-    public function retrieve(string $queryText, int $topK): Collection
+    public function retrieve(string $queryText, int $topK, string $trustStatus = KbDocument::TRUST_GROUND_TRUTH, ?string $sourceType = null): Collection
     {
-        if (! $this->groundTruthQuery()->exists()) {
+        if (! $this->candidateQuery($trustStatus, $sourceType)->exists()) {
             return collect();
         }
 
         $queryVector = $this->client->embed([$queryText], 'query')[0];
 
         if (Schema::getConnection()->getDriverName() === 'pgsql') {
-            return $this->groundTruthQuery()
+            return $this->candidateQuery($trustStatus, $sourceType)
                 ->orderByRaw('embedding <=> ?::vector', [$queryVector])
                 ->limit($topK)
                 ->get();
         }
 
-        $queryFloats = $this->parseVector($queryVector);
+        $queryFloats = $this->similarity->parseVector($queryVector);
 
-        return $this->groundTruthQuery()
+        return $this->candidateQuery($trustStatus, $sourceType)
             ->get()
-            ->sortByDesc(fn (KbDocument $document): float => $this->cosineSimilarity($queryFloats, $this->parseVector((string) $document->embedding)))
+            ->sortByDesc(fn (KbDocument $document): float => $this->similarity->cosineSimilarity($queryFloats, $this->similarity->parseVector((string) $document->embedding)))
             ->take($topK)
             ->values();
     }
 
-    private function groundTruthQuery(): Builder
+    private function candidateQuery(string $trustStatus, ?string $sourceType): Builder
     {
-        return KbDocument::query()
-            ->where('trust_status', KbDocument::TRUST_GROUND_TRUTH)
+        $query = KbDocument::query()
+            ->where('trust_status', $trustStatus)
             ->whereNotNull('embedding');
-    }
 
-    /**
-     * @return list<float>
-     */
-    private function parseVector(string $literal): array
-    {
-        return array_map('floatval', explode(',', trim($literal, '[]')));
-    }
-
-    /**
-     * @param  list<float>  $a
-     * @param  list<float>  $b
-     */
-    private function cosineSimilarity(array $a, array $b): float
-    {
-        $dot = 0.0;
-        $normA = 0.0;
-        $normB = 0.0;
-
-        foreach ($a as $index => $value) {
-            $other = $b[$index] ?? 0.0;
-            $dot += $value * $other;
-            $normA += $value ** 2;
-            $normB += $other ** 2;
+        if ($sourceType !== null) {
+            $query->where('source_type', $sourceType);
         }
 
-        if ($normA === 0.0 || $normB === 0.0) {
-            return 0.0;
-        }
-
-        return $dot / (sqrt($normA) * sqrt($normB));
+        return $query;
     }
 }
