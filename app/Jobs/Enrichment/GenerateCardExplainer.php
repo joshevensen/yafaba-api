@@ -5,6 +5,7 @@ namespace App\Jobs\Enrichment;
 use App\Models\Card;
 use App\Models\CardExplainer;
 use App\Models\ErrataBulletin;
+use App\Models\Keyword;
 use App\Services\Enrichment\CardExplainerPromptBuilder;
 use App\Services\Enrichment\KbRetriever;
 use App\Services\EnrichmentRunContext;
@@ -122,7 +123,7 @@ class GenerateCardExplainer extends EnrichmentJob
     {
         $parts = array_filter([
             $card->functional_text,
-            ...$card->keywords->map(fn ($keyword) => $keyword->explainer ?? $keyword->rules_text)->filter()->all(),
+            ...$card->keywords->map(fn (Keyword $keyword): ?string => $keyword->explainer ?? $keyword->rules_text)->filter()->all(),
         ]);
 
         return trim(implode("\n", $parts));

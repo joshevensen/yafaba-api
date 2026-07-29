@@ -74,4 +74,17 @@ class KbRetrieverTest extends TestCase
         $this->assertTrue($results->isEmpty());
         Http::assertNothingSent();
     }
+
+    public function test_retrieve_ranks_the_most_similar_document_first(): void
+    {
+        $orthogonal = KbDocument::factory()->create(['trust_status' => KbDocument::TRUST_GROUND_TRUTH, 'embedding' => '[0,1,0]']);
+        $exactMatch = KbDocument::factory()->create(['trust_status' => KbDocument::TRUST_GROUND_TRUTH, 'embedding' => '[1,0,0]']);
+        $opposite = KbDocument::factory()->create(['trust_status' => KbDocument::TRUST_GROUND_TRUTH, 'embedding' => '[-1,0,0]']);
+
+        $this->fakeQueryEmbedding([1, 0, 0]);
+
+        $results = app(KbRetriever::class)->retrieve('functional text', 3);
+
+        $this->assertSame([$exactMatch->id, $orthogonal->id, $opposite->id], $results->pluck('id')->all());
+    }
 }
