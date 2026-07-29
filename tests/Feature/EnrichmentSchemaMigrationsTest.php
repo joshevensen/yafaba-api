@@ -24,7 +24,7 @@ class EnrichmentSchemaMigrationsTest extends TestCase
     {
         return [
             'card_explainers' => ['card_id', 'explainer_text', 'cited_rules', 'status', 'generated_at', 'validated_at', 'source_hash', 'prompt_version'],
-            'combo_pairs' => ['id', 'card_id_a', 'card_id_b', 'description', 'status', 'self_play_win_rate_delta'],
+            'combo_pairs' => ['id', 'card_id_a', 'card_id_b', 'description', 'status', 'self_play_win_rate_delta', 'source_hash', 'prompt_version', 'generated_at'],
             'synergy_tags' => ['id', 'name', 'description'],
             'card_synergy_tags' => ['card_id', 'synergy_tag_id', 'status'],
             'kb_documents' => ['id', 'source_type', 'source_ref', 'content', 'embedding', 'embedding_model', 'trust_status', 'version', 'effective_date', 'created_at'],

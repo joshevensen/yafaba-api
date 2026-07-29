@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['id', 'card_id_a', 'card_id_b', 'description', 'status', 'self_play_win_rate_delta'])]
+#[Fillable(['id', 'card_id_a', 'card_id_b', 'description', 'status', 'self_play_win_rate_delta', 'source_hash', 'prompt_version', 'generated_at'])]
 class ComboPair extends Model
 {
     /** @use HasFactory<ComboPairFactory> */
@@ -28,6 +28,7 @@ class ComboPair extends Model
     {
         return [
             'self_play_win_rate_delta' => 'float',
+            'generated_at' => 'datetime',
         ];
     }
 

@@ -87,4 +87,17 @@ class KbRetrieverTest extends TestCase
 
         $this->assertSame([$exactMatch->id, $orthogonal->id, $opposite->id], $results->pluck('id')->all());
     }
+
+    public function test_retrieve_can_filter_to_validated_combo_documents(): void
+    {
+        $combo = KbDocument::factory()->create(['trust_status' => KbDocument::TRUST_VALIDATED, 'source_type' => KbDocument::SOURCE_COMBO, 'embedding' => '[1,0,0]']);
+        KbDocument::factory()->create(['trust_status' => KbDocument::TRUST_VALIDATED, 'source_type' => KbDocument::SOURCE_SYNERGY, 'embedding' => '[1,0,0]']);
+        KbDocument::factory()->create(['trust_status' => KbDocument::TRUST_GROUND_TRUTH, 'embedding' => '[1,0,0]']);
+
+        $this->fakeQueryEmbedding([1, 0, 0]);
+
+        $results = app(KbRetriever::class)->retrieve('functional text', 8, KbDocument::TRUST_VALIDATED, KbDocument::SOURCE_COMBO);
+
+        $this->assertSame([$combo->id], $results->pluck('id')->all());
+    }
 }

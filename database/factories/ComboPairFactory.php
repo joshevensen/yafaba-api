@@ -24,6 +24,9 @@ class ComboPairFactory extends Factory
             'description' => fake()->sentence(),
             'status' => 'draft',
             'self_play_win_rate_delta' => null,
+            'source_hash' => null,
+            'prompt_version' => null,
+            'generated_at' => null,
         ];
     }
 

@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "required": ["combos"],
+  "properties": {
+    "combos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["card_id_b", "description"],
+        "properties": {
+          "card_id_b": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}

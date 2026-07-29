@@ -83,7 +83,17 @@ class EnrichmentPlanner
                                 ->orWhereColumn('card_explainers.generated_at', '<', 'cards.updated_at');
                         });
                 }),
-                'combo' => $query->whereDoesntHave('comboPairs'),
+                'combo' => $query->where(function ($q): void {
+                    $q->whereDoesntHave('comboPairs', function ($cq): void {
+                        $cq->where('status', 'draft');
+                    })->orWhereHas('comboPairs', function ($cq): void {
+                        $cq->where('status', 'draft')
+                            ->where(function ($sq): void {
+                                $sq->whereNull('generated_at')
+                                    ->orWhereColumn('combo_pairs.generated_at', '<', 'cards.updated_at');
+                            });
+                    });
+                }),
                 'synergy' => $query->whereDoesntHave('synergyTags'),
                 default => null,
             };
