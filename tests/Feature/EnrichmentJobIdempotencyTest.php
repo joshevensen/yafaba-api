@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Anthropic\Client;
+use Anthropic\RequestOptions;
 use App\Jobs\Enrichment\BuildKnowledgeBase;
 use App\Jobs\Enrichment\GenerateCardExplainer;
 use App\Jobs\Enrichment\TagCardCombos;
@@ -13,13 +15,17 @@ use App\Models\ErrataBulletin;
 use App\Models\KbDocument;
 use App\Models\RulesTextVersion;
 use App\Models\SynergyTag;
+use App\Services\Enrichment\CardExplainerPromptBuilder;
 use App\Services\Enrichment\KbChunker;
+use App\Services\Enrichment\KbRetriever;
 use App\Services\EnrichmentRunContext;
+use App\Services\Llm\LlmTransportFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Tests\Support\FakePsr18Client;
 use Tests\TestCase;
 
 class EnrichmentJobIdempotencyTest extends TestCase
@@ -68,25 +74,50 @@ class EnrichmentJobIdempotencyTest extends TestCase
         );
     }
 
+    private function handleExplainerJob(GenerateCardExplainer $job): void
+    {
+        $job->handle(app(KbRetriever::class), app(CardExplainerPromptBuilder::class), app(LlmTransportFactory::class));
+    }
+
+    private function bindFakeAnthropicClient(): void
+    {
+        $body = [
+            'id' => 'msg_01',
+            'type' => 'message',
+            'role' => 'assistant',
+            'model' => 'claude-sonnet-5',
+            'content' => [['type' => 'tool_use', 'id' => 'toolu_01', 'name' => 'emit_result', 'input' => ['explainer_text' => 'Because…', 'cited_rules' => ['1.2.3']]]],
+            'stop_reason' => 'tool_use',
+            'stop_sequence' => null,
+            'usage' => ['input_tokens' => 10, 'output_tokens' => 20],
+        ];
+
+        $this->app->instance(Client::class, new Client(
+            apiKey: 'test-anthropic-key',
+            requestOptions: RequestOptions::with(transporter: new FakePsr18Client([$body])),
+        ));
+    }
+
     public function test_generate_card_explainer_skips_when_up_to_date(): void
     {
         $card = Card::factory()->create(['updated_at' => now()->subDay()]);
         CardExplainer::factory()->create(['card_id' => $card->id, 'generated_at' => now()]);
 
-        (new GenerateCardExplainer($this->context(['cardId' => $card->id]), $card->id))->handle();
+        $this->handleExplainerJob(new GenerateCardExplainer($this->context(['cardId' => $card->id]), $card->id));
 
         $this->assertCount(1, $this->loggedWithMessage('enrichment.skipped'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.stub'));
+        $this->assertCount(0, $this->loggedWithMessage('enrichment.explainer_generated'));
     }
 
     public function test_generate_card_explainer_does_not_skip_when_fresh(): void
     {
-        $card = Card::factory()->create(['updated_at' => now()->subDay()]);
+        $card = Card::factory()->create(['updated_at' => now()->subDay(), 'functional_text' => 'Deal 1 damage.']);
         CardExplainer::factory()->create(['card_id' => $card->id, 'generated_at' => now()]);
+        $this->bindFakeAnthropicClient();
 
-        (new GenerateCardExplainer($this->context(['cardId' => $card->id, 'fresh' => true]), $card->id))->handle();
+        $this->handleExplainerJob(new GenerateCardExplainer($this->context(['cardId' => $card->id, 'fresh' => true]), $card->id));
 
-        $this->assertCount(1, $this->loggedWithMessage('enrichment.stub'));
+        $this->assertCount(1, $this->loggedWithMessage('enrichment.explainer_generated'));
         $this->assertCount(0, $this->loggedWithMessage('enrichment.skipped'));
     }
 
@@ -94,10 +125,10 @@ class EnrichmentJobIdempotencyTest extends TestCase
     {
         $card = Card::factory()->create();
 
-        (new GenerateCardExplainer($this->context(['cardId' => $card->id, 'dryRun' => true]), $card->id))->handle();
+        $this->handleExplainerJob(new GenerateCardExplainer($this->context(['cardId' => $card->id, 'dryRun' => true]), $card->id));
 
         $this->assertCount(1, $this->loggedWithMessage('enrichment.dry_run'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.stub'));
+        $this->assertCount(0, $this->loggedWithMessage('enrichment.explainer_generated'));
         $this->assertDatabaseCount('card_explainers', 0);
     }
 
