@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "required": ["explainer_text", "cited_rules"],
+  "properties": {
+    "explainer_text": { "type": "string" },
+    "cited_rules": { "type": "array", "items": { "type": "string" } }
+  }
+}
