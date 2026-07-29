@@ -84,11 +84,15 @@ class EnrichmentPlanner
                         });
                 }),
                 'combo' => $query->where(function ($q): void {
-                    $q->whereDoesntHave('comboPairs')
-                        ->orWhereHas('comboPairs', function ($cq): void {
-                            $cq->whereNull('generated_at')
-                                ->orWhereColumn('combo_pairs.generated_at', '<', 'cards.updated_at');
-                        });
+                    $q->whereDoesntHave('comboPairs', function ($cq): void {
+                        $cq->where('status', 'draft');
+                    })->orWhereHas('comboPairs', function ($cq): void {
+                        $cq->where('status', 'draft')
+                            ->where(function ($sq): void {
+                                $sq->whereNull('generated_at')
+                                    ->orWhereColumn('combo_pairs.generated_at', '<', 'cards.updated_at');
+                            });
+                    });
                 }),
                 'synergy' => $query->whereDoesntHave('synergyTags'),
                 default => null,

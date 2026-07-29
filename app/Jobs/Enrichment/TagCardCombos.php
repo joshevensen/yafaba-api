@@ -151,7 +151,7 @@ class TagCardCombos extends EnrichmentJob
             return false;
         }
 
-        $row = ComboPair::where('card_id_a', $this->cardId)->first();
+        $row = ComboPair::where('card_id_a', $this->cardId)->where('status', 'draft')->first();
 
         if ($row === null) {
             return false;

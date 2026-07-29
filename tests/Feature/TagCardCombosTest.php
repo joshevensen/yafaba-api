@@ -302,4 +302,51 @@ class TagCardCombosTest extends TestCase
         $this->assertTrue($scope->contains($missingCard->id));
         $this->assertFalse($scope->contains($freshCard->id));
     }
+
+    public function test_it_skips_based_on_the_draft_row_when_a_validated_row_also_exists(): void
+    {
+        $card = Card::factory()->create(['source_hash' => 'hash-1', 'updated_at' => now()->subDay()]);
+
+        ComboPair::factory()->validated()->create([
+            'card_id_a' => $card->id,
+            'source_hash' => null,
+            'prompt_version' => null,
+            'generated_at' => null,
+        ]);
+
+        ComboPair::factory()->create([
+            'card_id_a' => $card->id,
+            'status' => 'draft',
+            'source_hash' => 'hash-1',
+            'prompt_version' => 'v0',
+            'generated_at' => now(),
+        ]);
+
+        $this->handleComboJob(new TagCardCombos($this->context(['cardId' => $card->id, 'promptVersion' => 'v0']), $card->id));
+
+        $this->assertCount(1, array_filter($this->loggedMessages, fn (array $e): bool => $e['message'] === 'enrichment.skipped' && $e['context']['reason'] === 'up_to_date'));
+        $this->assertCount(0, array_filter($this->loggedMessages, fn (array $e): bool => $e['message'] === 'enrichment.combos_tagged'));
+    }
+
+    public function test_planner_combo_scope_excludes_a_card_whose_only_draft_row_is_current_despite_a_null_stamped_validated_row(): void
+    {
+        $card = Card::factory()->create(['updated_at' => now()->subDay()]);
+
+        ComboPair::factory()->validated()->create([
+            'card_id_a' => $card->id,
+            'source_hash' => null,
+            'prompt_version' => null,
+            'generated_at' => null,
+        ]);
+
+        ComboPair::factory()->create([
+            'card_id_a' => $card->id,
+            'status' => 'draft',
+            'generated_at' => now(),
+        ]);
+
+        $scope = app(EnrichmentPlanner::class)->cardScopeFor('combo', $this->context());
+
+        $this->assertFalse($scope->contains($card->id));
+    }
 }
