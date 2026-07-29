@@ -13,6 +13,11 @@ use Illuminate\Queue\Middleware\RateLimited;
  * makes the enrichment-embedding rate limiter (queue middleware, which gates
  * job execution) actually throttle the API instead of letting a single
  * inline loop consume one token and then hammer Voyage unthrottled.
+ *
+ * Runs on its own queue (config('enrichment.embedding.queue')), separate
+ * from BuildKnowledgeBase's queue: BuildKnowledgeBase blocks synchronously
+ * waiting for a batch of these jobs to finish, so a single worker consuming
+ * one queue would deadlock against itself if both ran on the same queue.
  */
 class EmbedKbChunks extends EnrichmentJob
 {
@@ -22,6 +27,8 @@ class EmbedKbChunks extends EnrichmentJob
     public function __construct(EnrichmentRunContext $context, public readonly array $chunks)
     {
         parent::__construct($context);
+
+        $this->onQueue((string) config('enrichment.embedding.queue'));
     }
 
     public function handle(VoyageEmbeddingClient $client): void

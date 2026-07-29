@@ -9,6 +9,7 @@ use App\Services\Enrichment\KbChunker;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Builds the knowledge base: chunks the latest Comprehensive Rules text,
@@ -19,7 +20,16 @@ use Illuminate\Support\Facades\Bus;
  * re-embeds them, even when their source_type has no fresh content this run.
  *
  * Skips when a KB document already exists that is newer than the latest
- * rules text and errata sources (unless --fresh was requested).
+ * rules text and errata sources and every row already matches the
+ * configured embedding model (unless --fresh was requested).
+ *
+ * Rows superseded by a rebuild are deleted only after their replacements
+ * have been confirmed written — never before dispatch — so a Voyage outage
+ * or a killed/retried job can leave duplicates but never silently loses KB
+ * content. EmbedKbChunks jobs run on a dedicated queue (see
+ * config('enrichment.embedding.queue')) rather than this job's own queue,
+ * because this job blocks waiting for them: sharing a queue would let a
+ * single worker deadlock against itself.
  */
 class BuildKnowledgeBase extends EnrichmentJob
 {
@@ -51,15 +61,12 @@ class BuildKnowledgeBase extends EnrichmentJob
             'effective_date' => $row->effective_date?->toDateString(),
         ])->all();
 
-        if ($touchedSourceTypes !== []) {
-            KbDocument::whereIn('source_type', $touchedSourceTypes)->delete();
-        }
+        $idsToRetire = $touchedSourceTypes !== []
+            ? KbDocument::whereIn('source_type', $touchedSourceTypes)->pluck('id')->all()
+            : [];
+        $idsToRetire = array_merge($idsToRetire, $staleRows->pluck('id')->all());
 
-        if ($staleRows->isNotEmpty()) {
-            KbDocument::whereIn('id', $staleRows->pluck('id'))->delete();
-        }
-
-        $this->embedAll(array_merge($freshChunks, $reEmbedChunks));
+        $this->embedAndRetire(array_merge($freshChunks, $reEmbedChunks), $idsToRetire);
     }
 
     /**
@@ -88,9 +95,15 @@ class BuildKnowledgeBase extends EnrichmentJob
             return false;
         }
 
-        return KbDocument::where('created_at', '>=', $latestRulesFetch)
+        $contentIsFresh = KbDocument::where('created_at', '>=', $latestRulesFetch)
             ->where('created_at', '>=', $latestErrataCache)
             ->exists();
+
+        if (! $contentIsFresh) {
+            return false;
+        }
+
+        return ! $this->staleRowsOutsideTouchedTypes([])->isNotEmpty();
     }
 
     /**
@@ -133,14 +146,19 @@ class BuildKnowledgeBase extends EnrichmentJob
     }
 
     /**
-     * Dispatches EmbedKbChunks in rate-limited slices and blocks until the
-     * batch finishes, so this chain link doesn't complete — and the
-     * enrich:run chain doesn't advance to the next step — before the KB is
-     * actually populated.
+     * Dispatches EmbedKbChunks in rate-limited slices on their own queue and
+     * blocks until the batch finishes, so this chain link doesn't complete —
+     * and the enrich:run chain doesn't advance to the next step — before the
+     * KB is actually populated. The bound wait guards against a killed
+     * worker looping forever; the caller's superseded rows are only deleted
+     * once the batch is confirmed to have finished without failures, so a
+     * timeout or a partial failure leaves old content in place (possibly
+     * duplicated once a later run succeeds) rather than losing it.
      *
      * @param  list<array{source_type: string, source_ref: ?string, content: string, trust_status: string, effective_date: ?string}>  $chunks
+     * @param  list<string>  $idsToRetire
      */
-    private function embedAll(array $chunks): void
+    private function embedAndRetire(array $chunks, array $idsToRetire): void
     {
         if ($chunks === []) {
             return;
@@ -155,8 +173,32 @@ class BuildKnowledgeBase extends EnrichmentJob
 
         $batch = Bus::batch($jobs)->name('enrichment:kb-embed')->allowFailures()->dispatch();
 
-        while (! $batch->fresh()->finished()) {
+        $deadline = time() + max(1, (int) config('enrichment.embedding.max_wait_seconds'));
+
+        while (! $batch->fresh()->finished() && time() < $deadline) {
             usleep(100_000);
+        }
+
+        $batch = $batch->fresh();
+
+        if (! $batch->finished()) {
+            Log::warning('enrichment.kb_embed_timed_out', ['step' => $this->stepKey(), 'batch_id' => $batch->id]);
+
+            return;
+        }
+
+        if ($batch->hasFailures()) {
+            Log::warning('enrichment.kb_embed_partial_failure', [
+                'step' => $this->stepKey(),
+                'batch_id' => $batch->id,
+                'failed_jobs' => $batch->failedJobIds,
+            ]);
+
+            return;
+        }
+
+        if ($idsToRetire !== []) {
+            KbDocument::whereIn('id', $idsToRetire)->delete();
         }
     }
 }

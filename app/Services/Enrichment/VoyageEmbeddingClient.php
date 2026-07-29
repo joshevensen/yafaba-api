@@ -26,7 +26,13 @@ class VoyageEmbeddingClient
 
         $texts = array_values($texts);
 
-        $response = Http::withToken((string) config('services.voyageai.key'))
+        $key = (string) config('services.voyageai.key');
+
+        if ($key === '') {
+            throw new VoyageEmbeddingException('VOYAGE_API_KEY is not configured.');
+        }
+
+        $response = Http::withToken($key)
             ->timeout(60)
             ->post(rtrim((string) config('services.voyageai.api_url'), '/').'/embeddings', [
                 'model' => config('enrichment.embedding.model'),
@@ -45,7 +51,13 @@ class VoyageEmbeddingClient
             throw new VoyageEmbeddingException('Voyage embeddings response returned an unexpected number of vectors.');
         }
 
-        usort($data, fn (array $a, array $b): int => ($a['index'] ?? 0) <=> ($b['index'] ?? 0));
+        foreach ($data as $item) {
+            if (! is_int($item['index'] ?? null)) {
+                throw new VoyageEmbeddingException('Voyage embeddings response item is missing a valid index.');
+            }
+        }
+
+        usort($data, fn (array $a, array $b): int => $a['index'] <=> $b['index']);
 
         $dimensions = (int) config('enrichment.embedding.dimensions');
         $vectors = [];

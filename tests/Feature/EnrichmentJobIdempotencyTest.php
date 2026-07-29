@@ -185,7 +185,7 @@ class EnrichmentJobIdempotencyTest extends TestCase
 
         RulesTextVersion::factory()->create(['fetched_at' => now()->subDay()]);
         ErrataBulletin::factory()->create(['cached_at' => now()->subDay()]);
-        KbDocument::factory()->create(['created_at' => now()]);
+        KbDocument::factory()->embedded()->create(['created_at' => now(), 'embedding_model' => config('enrichment.embedding.model')]);
 
         (new BuildKnowledgeBase($this->context()))->handle(app(KbChunker::class));
 

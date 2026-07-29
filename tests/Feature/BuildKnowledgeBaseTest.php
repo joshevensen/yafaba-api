@@ -228,4 +228,56 @@ class BuildKnowledgeBaseTest extends TestCase
         $this->assertCount(1, $middleware);
         $this->assertInstanceOf(RateLimited::class, $middleware[0]);
     }
+
+    public function test_embed_kb_chunks_runs_on_a_dedicated_queue_distinct_from_build_knowledge_base(): void
+    {
+        $embedJob = new EmbedKbChunks($this->context(), []);
+        $buildJob = new BuildKnowledgeBase($this->context());
+
+        $this->assertSame(config('enrichment.embedding.queue'), $embedJob->queue);
+        $this->assertNotSame($buildJob->queue, $embedJob->queue);
+    }
+
+    public function test_a_failed_embed_slice_does_not_delete_the_rows_it_would_have_replaced(): void
+    {
+        $existingFirst = KbDocument::factory()->embedded()->create([
+            'source_type' => KbDocument::SOURCE_CR_RULES,
+            'source_ref' => '1.0',
+            'content' => 'stale first section content',
+        ]);
+        $existingSecond = KbDocument::factory()->embedded()->create([
+            'source_type' => KbDocument::SOURCE_CR_RULES,
+            'source_ref' => '2.0',
+            'content' => 'stale second section content',
+        ]);
+
+        config(['enrichment.embedding.batch_size' => 1]);
+
+        Http::fake([
+            '*' => function ($request) {
+                $input = $request->data()['input'];
+
+                if (str_contains($input[0], 'Combat and damage')) {
+                    return Http::response('voyage outage', 500);
+                }
+
+                return Http::response(['data' => array_map(
+                    fn (int $index): array => ['index' => $index, 'embedding' => array_fill(0, 1024, 0.1)],
+                    array_keys($input),
+                )]);
+            },
+        ]);
+
+        RulesTextVersion::factory()->create(['full_text' => "1.0 Timing and priority rules in detail here for this scenario testing.\n2.0 Combat and damage assignment rules in detail here for this scenario too."]);
+        ErrataBulletin::factory()->create();
+
+        $this->runJob($this->context());
+
+        // The failing slice means the batch has failures, so BuildKnowledgeBase must not
+        // have deleted either pre-existing row — losing "1.0"'s replaced content would be
+        // fine (it re-embedded successfully) but losing "2.0" (whose replacement failed)
+        // would be silent, permanent data loss.
+        $this->assertDatabaseHas('kb_documents', ['id' => $existingFirst->id]);
+        $this->assertDatabaseHas('kb_documents', ['id' => $existingSecond->id]);
+    }
 }

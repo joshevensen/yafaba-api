@@ -109,6 +109,35 @@ class VoyageEmbeddingClientTest extends TestCase
         $this->client()->embed(['hello']);
     }
 
+    public function test_missing_index_throws_instead_of_silently_colliding(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'data' => [
+                    ['embedding' => array_fill(0, 1024, 0.1)],
+                    ['embedding' => array_fill(0, 1024, 0.2)],
+                ],
+            ]),
+        ]);
+
+        $this->expectException(VoyageEmbeddingException::class);
+
+        $this->client()->embed(['first', 'second']);
+    }
+
+    public function test_missing_api_key_throws_before_sending(): void
+    {
+        // No Http::fake() registered for this test — if the client tried to send
+        // despite the empty key, preventStrayRequests() would throw a different
+        // exception (a stray-request error, not VoyageEmbeddingException) and fail
+        // the expectException assertion below.
+        config(['services.voyageai.key' => '']);
+
+        $this->expectException(VoyageEmbeddingException::class);
+
+        $this->client()->embed(['hello']);
+    }
+
     public function test_empty_input_returns_empty_and_sends_nothing(): void
     {
         $this->assertSame([], $this->client()->embed([]));
