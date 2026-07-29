@@ -59,4 +59,33 @@ class JsonSchemaValidatorTest extends TestCase
 
         $this->assertSame([], $violations);
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function schemaWithArrayProperty(): array
+    {
+        return [
+            'type' => 'object',
+            'required' => ['cited_rules'],
+            'properties' => [
+                'cited_rules' => ['type' => 'array', 'items' => ['type' => 'string']],
+            ],
+        ];
+    }
+
+    public function test_it_accepts_an_array_whose_items_all_match(): void
+    {
+        $violations = (new JsonSchemaValidator)->validate(['cited_rules' => ['8.5.3b', '1.2']], $this->schemaWithArrayProperty());
+
+        $this->assertSame([], $violations);
+    }
+
+    public function test_it_reports_a_violation_for_a_wrongly_typed_array_item(): void
+    {
+        $violations = (new JsonSchemaValidator)->validate(['cited_rules' => ['8.5.3b', 123]], $this->schemaWithArrayProperty());
+
+        $this->assertCount(1, $violations);
+        $this->assertStringContainsString("Property 'cited_rules' item at index 1 expected type 'string', got 'integer'", $violations[0]);
+    }
 }

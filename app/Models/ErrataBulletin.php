@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\ErrataBulletinFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,5 +31,13 @@ class ErrataBulletin extends Model
             'affected_card_ids' => 'array',
             'cached_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Scope to bulletins whose affected_card_ids lists the given card.
+     */
+    public function scopeAffectingCard(Builder $query, string $cardId): void
+    {
+        $query->whereJsonContains('affected_card_ids', $cardId);
     }
 }

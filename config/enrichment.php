@@ -32,6 +32,25 @@ return [
     /** Intended worker count for the enrichment queue; Laravel batches have no native concurrency cap. */
     'batch_concurrency' => (int) env('ENRICHMENT_BATCH_CONCURRENCY', 5),
 
+    'models' => [
+        /** Fallback model id for any LlmTransport::complete() call that doesn't specify one. */
+        'default' => env('ENRICHMENT_MODEL_DEFAULT', 'claude-sonnet-5'),
+        'card_explainer' => env('ENRICHMENT_MODEL_CARD_EXPLAINER', 'claude-sonnet-5'),
+    ],
+
+    'llm' => [
+        'max_tokens' => (int) env('ENRICHMENT_LLM_MAX_TOKENS', 2048),
+    ],
+
+    'api' => [
+        /** Re-prompt attempts ApiLlmTransport makes on a schema-invalid response before throwing. */
+        'max_attempts' => (int) env('ENRICHMENT_API_MAX_ATTEMPTS', 3),
+    ],
+
+    'retrieval' => [
+        'card_explainer_top_k' => (int) env('ENRICHMENT_RETRIEVAL_TOP_K', 8),
+    ],
+
     'embedding' => [
         'model' => env('ENRICHMENT_EMBEDDING_MODEL', 'voyage-3.5'),
         'dimensions' => 1024,

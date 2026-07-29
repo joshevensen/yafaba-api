@@ -42,7 +42,39 @@ class JsonSchemaValidator
 
                 if ($propertyType !== null && ! $this->matchesType($payload[$property], $propertyType)) {
                     $violations[] = "Property '{$property}' expected type '{$propertyType}', got '".$this->describeType($payload[$property])."'.";
+
+                    continue;
                 }
+
+                if ($propertyType === 'array' && isset($propertySchema['items']['type'])) {
+                    $violations = array_merge(
+                        $violations,
+                        $this->validateItems($property, $payload[$property], $propertySchema['items']['type']),
+                    );
+                }
+            }
+        }
+
+        return $violations;
+    }
+
+    /**
+     * Validate every element of an array property against the schema's
+     * 'items.type', returning one violation per mismatched element.
+     *
+     * @return array<int, string>
+     */
+    private function validateItems(string $property, mixed $value, string $itemType): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $violations = [];
+
+        foreach (array_values($value) as $index => $item) {
+            if (! $this->matchesType($item, $itemType)) {
+                $violations[] = "Property '{$property}' item at index {$index} expected type '{$itemType}', got '".$this->describeType($item)."'.";
             }
         }
 

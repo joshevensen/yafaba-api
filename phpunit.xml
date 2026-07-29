@@ -30,6 +30,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="VOYAGE_API_KEY" value="test-voyage-key"/>
+        <env name="ANTHROPIC_API_KEY" value="test-anthropic-key"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
