@@ -45,4 +45,9 @@ return [
         'api_url' => env('VOYAGE_API_URL', 'https://api.voyageai.com/v1'),
     ],
 
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
+    ],
+
 ];

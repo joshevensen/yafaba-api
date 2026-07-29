@@ -18,7 +18,7 @@ class VoyageEmbeddingClient
      * @param  list<string>  $texts
      * @return list<string>
      */
-    public function embed(array $texts): array
+    public function embed(array $texts, string $inputType = 'document'): array
     {
         if ($texts === []) {
             return [];
@@ -37,7 +37,7 @@ class VoyageEmbeddingClient
             ->post(rtrim((string) config('services.voyageai.api_url'), '/').'/embeddings', [
                 'model' => config('enrichment.embedding.model'),
                 'input' => $texts,
-                'input_type' => 'document',
+                'input_type' => $inputType,
                 'truncation' => true,
             ]);
 

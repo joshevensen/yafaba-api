@@ -25,6 +25,8 @@ class CardExplainerFactory extends Factory
             'status' => 'draft',
             'generated_at' => now(),
             'validated_at' => null,
+            'source_hash' => null,
+            'prompt_version' => config('enrichment.prompt_version'),
         ];
     }
 

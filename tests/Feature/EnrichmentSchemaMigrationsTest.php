@@ -23,7 +23,7 @@ class EnrichmentSchemaMigrationsTest extends TestCase
     private function expectedColumns(): array
     {
         return [
-            'card_explainers' => ['card_id', 'explainer_text', 'cited_rules', 'status', 'generated_at', 'validated_at'],
+            'card_explainers' => ['card_id', 'explainer_text', 'cited_rules', 'status', 'generated_at', 'validated_at', 'source_hash', 'prompt_version'],
             'combo_pairs' => ['id', 'card_id_a', 'card_id_b', 'description', 'status', 'self_play_win_rate_delta'],
             'synergy_tags' => ['id', 'name', 'description'],
             'card_synergy_tags' => ['card_id', 'synergy_tag_id', 'status'],

@@ -77,6 +77,8 @@ Plain-English "how this card works," LLM-generated during Enrichment and grounde
 | status | text | `draft` / `validated` |
 | generated_at | timestamptz | |
 | validated_at | timestamptz, nullable | |
+| source_hash | text, nullable | copy of `cards.source_hash` at generation time; skip-if-unchanged idempotency key |
+| prompt_version | text, nullable | prompt package version that produced the row; skip-if-unchanged idempotency key |
 
 ### Legality — `card_legality`
 One row per (card, format). Replaces the old `sage_legal` / `sage_banned` / `cc_legal` / `ll_status` columns; extends to new formats without schema changes.

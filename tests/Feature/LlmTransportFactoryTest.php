@@ -35,12 +35,14 @@ class LlmTransportFactoryTest extends TestCase
         app(LlmTransportFactory::class)->make('bogus');
     }
 
-    public function test_api_transport_placeholder_throws_a_clear_not_configured_exception(): void
+    public function test_api_transport_throws_when_no_api_key_is_configured(): void
     {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('No LLM API client is configured yet');
+        config(['services.anthropic.key' => '']);
 
-        (new ApiLlmTransport)->complete('prompt', ['type' => 'object']);
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('ANTHROPIC_API_KEY');
+
+        app(ApiLlmTransport::class)->complete('prompt', ['type' => 'object']);
     }
 
     public function test_llm_transport_binding_resolves_from_the_configured_default(): void
