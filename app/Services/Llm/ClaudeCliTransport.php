@@ -25,12 +25,13 @@ class ClaudeCliTransport implements LlmTransport
      * Shell out to the `claude` CLI, decode its JSON envelope, and validate
      * the decoded payload against the given schema. Re-prompts (appending
      * the validation errors) up to the configured max attempts before
-     * throwing.
+     * throwing. $model is ignored: the CLI selects its own model from its
+     * own configuration, not from this call.
      *
      * @param  array<string, mixed>  $schema
      * @return array<string, mixed>
      */
-    public function complete(string $prompt, array $schema): array
+    public function complete(string $prompt, array $schema, ?string $model = null): array
     {
         if (app()->environment('production')) {
             throw new RuntimeException('The Claude CLI transport is not permitted in production.');

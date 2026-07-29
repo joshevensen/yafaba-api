@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Anthropic\Client;
 use App\Services\Llm\LlmTransport;
 use App\Services\Llm\LlmTransportFactory;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -16,6 +17,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(LlmTransport::class, fn ($app) => $app->make(LlmTransportFactory::class)->make((string) config('enrichment.transport')));
+
+        $this->app->singleton(Client::class, fn () => new Client(
+            apiKey: (string) config('services.anthropic.key'),
+            baseUrl: (string) config('services.anthropic.base_url'),
+        ));
     }
 
     /**
