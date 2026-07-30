@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "required": ["tags", "new_tags"],
+  "properties": {
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["synergy_tag_id"],
+        "properties": {
+          "synergy_tag_id": { "type": "string" }
+        }
+      }
+    },
+    "new_tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "description"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}

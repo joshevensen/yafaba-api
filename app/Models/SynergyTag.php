@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['id', 'name', 'description'])]
+#[Fillable(['id', 'name', 'description', 'status'])]
 class SynergyTag extends Model
 {
     /** @use HasFactory<SynergyTagFactory> */
