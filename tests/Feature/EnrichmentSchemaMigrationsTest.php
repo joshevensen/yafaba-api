@@ -23,10 +23,10 @@ class EnrichmentSchemaMigrationsTest extends TestCase
     private function expectedColumns(): array
     {
         return [
-            'card_explainers' => ['card_id', 'explainer_text', 'cited_rules', 'status', 'generated_at', 'validated_at', 'source_hash', 'prompt_version', 'grounding_confidence', 'grounding_flag_reason'],
-            'combo_pairs' => ['id', 'card_id_a', 'card_id_b', 'description', 'status', 'self_play_win_rate_delta', 'source_hash', 'prompt_version', 'generated_at', 'plausibility_score', 'human_signoff_at'],
+            'card_explainers' => ['card_id', 'explainer_text', 'cited_rules', 'status', 'generated_at', 'validated_at', 'source_hash', 'prompt_version', 'grounding_confidence', 'grounding_flag_reason', 'published_at'],
+            'combo_pairs' => ['id', 'card_id_a', 'card_id_b', 'description', 'status', 'self_play_win_rate_delta', 'source_hash', 'prompt_version', 'generated_at', 'plausibility_score', 'human_signoff_at', 'published_at'],
             'synergy_tags' => ['id', 'name', 'description', 'status'],
-            'card_synergy_tags' => ['card_id', 'synergy_tag_id', 'status', 'source_hash', 'prompt_version', 'generated_at', 'plausibility_score', 'human_signoff_at'],
+            'card_synergy_tags' => ['card_id', 'synergy_tag_id', 'status', 'source_hash', 'prompt_version', 'generated_at', 'plausibility_score', 'human_signoff_at', 'published_at'],
             'kb_documents' => ['id', 'source_type', 'source_ref', 'content', 'embedding', 'embedding_model', 'trust_status', 'version', 'effective_date', 'created_at'],
         ];
     }
