@@ -38,6 +38,7 @@ return [
         'card_explainer' => env('ENRICHMENT_MODEL_CARD_EXPLAINER', 'claude-sonnet-5'),
         'combo_tagging' => env('ENRICHMENT_MODEL_COMBO_TAGGING', 'claude-haiku-4-5-20251001'),
         'synergy_tagging' => env('ENRICHMENT_MODEL_SYNERGY_TAGGING', 'claude-haiku-4-5-20251001'),
+        'explainer_validation' => env('ENRICHMENT_MODEL_EXPLAINER_VALIDATION', 'claude-haiku-4-5-20251001'),
     ],
 
     'llm' => [
