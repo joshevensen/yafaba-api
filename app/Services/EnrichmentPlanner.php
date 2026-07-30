@@ -94,7 +94,17 @@ class EnrichmentPlanner
                             });
                     });
                 }),
-                'synergy' => $query->whereDoesntHave('synergyTags'),
+                'synergy' => $query->where(function ($q): void {
+                    $q->whereDoesntHave('synergyTags', function ($tq): void {
+                        $tq->where('card_synergy_tags.status', 'draft');
+                    })->orWhereHas('synergyTags', function ($tq): void {
+                        $tq->where('card_synergy_tags.status', 'draft')
+                            ->where(function ($sq): void {
+                                $sq->whereNull('card_synergy_tags.generated_at')
+                                    ->orWhereColumn('card_synergy_tags.generated_at', '<', 'cards.updated_at');
+                            });
+                    });
+                }),
                 default => null,
             };
         }

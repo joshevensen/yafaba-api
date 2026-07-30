@@ -20,6 +20,7 @@ use App\Services\Enrichment\ComboCandidateRetriever;
 use App\Services\Enrichment\ComboTaggingPromptBuilder;
 use App\Services\Enrichment\KbChunker;
 use App\Services\Enrichment\KbRetriever;
+use App\Services\Enrichment\SynergyTaggingPromptBuilder;
 use App\Services\EnrichmentRunContext;
 use App\Services\Llm\LlmTransportFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -84,6 +85,11 @@ class EnrichmentJobIdempotencyTest extends TestCase
     private function handleComboJob(TagCardCombos $job): void
     {
         $job->handle(app(ComboCandidateRetriever::class), app(KbRetriever::class), app(ComboTaggingPromptBuilder::class), app(LlmTransportFactory::class));
+    }
+
+    private function handleSynergyJob(TagCardSynergies $job): void
+    {
+        $job->handle(app(KbRetriever::class), app(SynergyTaggingPromptBuilder::class), app(LlmTransportFactory::class));
     }
 
     private function bindFakeAnthropicClient(): void
@@ -213,44 +219,56 @@ class EnrichmentJobIdempotencyTest extends TestCase
 
     public function test_tag_card_synergies_skips_when_up_to_date(): void
     {
-        $card = Card::factory()->create();
+        $card = Card::factory()->create(['source_hash' => 'hash-1', 'updated_at' => now()->subDay()]);
         $tag = SynergyTag::factory()->create();
         DB::table('card_synergy_tags')->insert([
             'card_id' => $card->id,
             'synergy_tag_id' => $tag->id,
             'status' => 'draft',
+            'source_hash' => 'hash-1',
+            'prompt_version' => 'v0',
+            'generated_at' => now(),
         ]);
 
-        (new TagCardSynergies($this->context(['cardId' => $card->id]), $card->id))->handle();
+        $this->handleSynergyJob(new TagCardSynergies($this->context(['cardId' => $card->id]), $card->id));
 
         $this->assertCount(1, $this->loggedWithMessage('enrichment.skipped'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.stub'));
+        $this->assertCount(0, $this->loggedWithMessage('enrichment.synergies_tagged'));
     }
 
     public function test_tag_card_synergies_does_not_skip_when_fresh(): void
     {
-        $card = Card::factory()->create();
+        $card = Card::factory()->create(['source_hash' => 'hash-1', 'updated_at' => now()->subDay(), 'functional_text' => null]);
         $tag = SynergyTag::factory()->create();
         DB::table('card_synergy_tags')->insert([
             'card_id' => $card->id,
             'synergy_tag_id' => $tag->id,
             'status' => 'draft',
+            'source_hash' => 'hash-1',
+            'prompt_version' => 'v0',
+            'generated_at' => now(),
         ]);
 
-        (new TagCardSynergies($this->context(['cardId' => $card->id, 'fresh' => true]), $card->id))->handle();
+        // The card has no functional_text, so the real implementation hits
+        // the no_functional_text skip path before any KB retrieval or LLM
+        // call - no HTTP faking required. What we're proving here is that
+        // isUpToDate() was bypassed because of `fresh`, not that a tag was
+        // actually written.
+        $this->handleSynergyJob(new TagCardSynergies($this->context(['cardId' => $card->id, 'fresh' => true]), $card->id));
 
-        $this->assertCount(1, $this->loggedWithMessage('enrichment.stub'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.skipped'));
+        $skipped = $this->loggedWithMessage('enrichment.skipped');
+        $this->assertCount(1, $skipped);
+        $this->assertSame('no_functional_text', $skipped[0]['context']['reason']);
     }
 
     public function test_tag_card_synergies_respects_dry_run(): void
     {
         $card = Card::factory()->create();
 
-        (new TagCardSynergies($this->context(['cardId' => $card->id, 'dryRun' => true]), $card->id))->handle();
+        $this->handleSynergyJob(new TagCardSynergies($this->context(['cardId' => $card->id, 'dryRun' => true]), $card->id));
 
         $this->assertCount(1, $this->loggedWithMessage('enrichment.dry_run'));
-        $this->assertCount(0, $this->loggedWithMessage('enrichment.stub'));
+        $this->assertCount(0, $this->loggedWithMessage('enrichment.synergies_tagged'));
         $this->assertDatabaseCount('card_synergy_tags', 0);
     }
 

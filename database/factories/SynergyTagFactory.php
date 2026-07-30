@@ -20,6 +20,12 @@ class SynergyTagFactory extends Factory
         return [
             'name' => fake()->unique()->slug(3, false),
             'description' => fake()->sentence(),
+            'status' => 'approved',
         ];
+    }
+
+    public function proposed(): static
+    {
+        return $this->state(fn (array $attributes): array => ['status' => 'proposed']);
     }
 }
