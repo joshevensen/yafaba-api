@@ -235,7 +235,7 @@ class TagCardSynergies extends EnrichmentJob
             $name = $newTag['name'] ?? null;
             $description = $newTag['description'] ?? null;
 
-            if (! is_string($name) || trim($name) === '') {
+            if (! is_string($name) || trim($name) === '' || mb_strlen(trim($name)) > 255) {
                 continue;
             }
 

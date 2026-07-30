@@ -186,6 +186,18 @@ class TagCardSynergiesTest extends TestCase
         $this->assertDatabaseHas('synergy_tags', ['name' => 'first-theme', 'description' => 'First.']);
     }
 
+    public function test_it_discards_new_tag_proposals_with_an_oversized_name(): void
+    {
+        $card = Card::factory()->create(['functional_text' => 'Deal 1 damage.']);
+        $this->bindFakeAnthropicClient([], [
+            ['name' => str_repeat('a', 256), 'description' => 'Name exceeds the column length.'],
+        ]);
+
+        $this->handleSynergyJob(new TagCardSynergies($this->context(['cardId' => $card->id]), $card->id));
+
+        $this->assertDatabaseCount('synergy_tags', 0);
+    }
+
     public function test_it_replaces_draft_rows_and_preserves_validated_rows(): void
     {
         $card = Card::factory()->create(['functional_text' => 'Deal 1 damage.']);
