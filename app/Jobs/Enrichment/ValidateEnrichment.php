@@ -108,7 +108,7 @@ class ValidateEnrichment extends EnrichmentJob
                 (string) config('enrichment.models.explainer_validation'),
             );
 
-            $confidence = (float) $payload['confidence'];
+            $confidence = max(0.0, min(1.0, (float) $payload['confidence']));
             $isConsistent = (bool) $payload['is_consistent'];
 
             $explainer->update([
