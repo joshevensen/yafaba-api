@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "required": ["is_consistent", "confidence", "reason"],
+  "properties": {
+    "is_consistent": { "type": "boolean" },
+    "confidence": { "type": "number" },
+    "reason": { "type": "string" }
+  }
+}
